@@ -51,6 +51,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 400px;
 .route.hit{stroke:transparent;opacity:1}
 .stn{stroke-width:1.5;vector-effect:non-scaling-stroke}
 .rlbl{font-family:var(--font);font-weight:700;paint-order:stroke;stroke:var(--land);stroke-linejoin:round;pointer-events:none}
+.slbl{font-family:var(--font);font-weight:500;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-linejoin:round;pointer-events:none}
 .route{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.85;cursor:pointer}
 .mk{cursor:pointer;stroke:var(--panel);vector-effect:non-scaling-stroke;stroke-width:1.5}
 .mk.sel{stroke:var(--ink);stroke-width:2.5}
@@ -77,6 +78,9 @@ aside{background:var(--panel);border:1px solid var(--line);border-radius:10px;di
 dl{display:grid;grid-template-columns:76px 1fr;gap:6px 10px;margin:14px 0;font-size:13px}
 dt{color:var(--muted)}
 dd{margin:0;min-width:0}
+.stops{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 0;font-size:12.5px}
+.stops li{display:inline-flex;align-items:center}
+.stops li:not(:last-child)::after{content:"";width:12px;height:2px;background:var(--line);margin:0 5px}
 .desc{font-size:13.5px;margin:0 0 12px}
 .tl{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:8px;font-size:13px}
 .tl li{position:relative}
@@ -121,7 +125,7 @@ dd{margin:0;min-width:0}
   <div class="filters">
     <div class="fgroup" id="fcat"><span class="flabel">분야</span></div>
     <div class="fgroup" id="fstage"><span class="flabel">단계</span></div>
-    <input id="q" type="search" placeholder="사업명·노선·지역 검색" aria-label="사업 검색">
+    <input id="q" type="search" placeholder="사업명·노선·역 이름 검색" aria-label="사업 검색">
   </div>
   <main>
     <div class="mapbox">
@@ -236,21 +240,21 @@ const PROJECTS=[
   tl:[["2012","친수구역 지정"],["2018","국가 스마트시티 시범도시 지정"],["2023","첫 입주"],["2028","전체 준공 목표",1]],
   chk:0,src:"https://www.kwater.or.kr"},
 
- {id:"gtxa",name:"GTX-A (운정 ~ 동탄)",cat:"gtx",ln:"GTX-A",sec:"운정중앙 ~ 서울역 ~ 삼성 ~ 수서 ~ 동탄",lp:1,org:"국토교통부 · 국가철도공단 · 에스지레일",region:"경기 파주 운정 ~ 서울 ~ 경기 화성 동탄",lat:37.555,lon:126.972,stage:3,
-  route:[[37.716,126.746],[37.669,126.748],[37.632,126.811],[37.555,126.972],[37.509,127.063],[37.487,127.101],[37.395,127.121],[37.299,127.107],[37.200,127.097]],
+ {id:"gtxa",name:"GTX-A (운정 ~ 동탄)",cat:"gtx",ln:"GTX-A",st:["운정중앙", "킨텍스", "대곡", "연신내", "서울역", "삼성", "수서", "성남", "구성", "동탄"],sec:"운정중앙 ~ 서울역 ~ 삼성 ~ 수서 ~ 동탄",lp:1,org:"국토교통부 · 국가철도공단 · 에스지레일",region:"경기 파주 운정 ~ 서울 ~ 경기 화성 동탄",lat:37.555,lon:126.972,stage:3,
+  route:[[37.716,126.746],[37.669,126.748],[37.632,126.811],[37.619,126.921],[37.555,126.972],[37.509,127.063],[37.487,127.101],[37.395,127.121],[37.299,127.107],[37.200,127.097]],
   scale:"총연장 약 82.1km · 정거장 11개소",period:"2018 ~ 2028 이후",
   desc:"수도권 광역급행철도 첫 노선. 수서~동탄과 운정~서울역은 운행 중입니다. 서울역~수서 연결은 2026년 6월 목표였으나 5월 삼성역 구간 시공 오류(철근 누락)가 드러나 연기됐습니다.",
   tl:[["2018.12","착공"],["2024.03","수서~동탄 개통"],["2024.12","운정~서울역 개통"],["2026.05","삼성역 구간 철근 누락 확인, 연결 개통 연기"],["2026 말~","서울역~수서 연결(삼성역 무정차) 전망",1],["2028","삼성역 완전 개통 목표(지연 가능)",1]],
   chk:1,news:[["위키트리 · 서울역~수서 개통 지연","https://www.wikitree.co.kr/articles/1128480"],["철도경제신문 · 서울~수서 연결 일정","https://www.redaily.co.kr/news/articleView.html?idxno=15874"]],
   src:"https://www.molit.go.kr"},
- {id:"gtxb",name:"GTX-B (인천대입구 ~ 마석)",cat:"gtx",ln:"GTX-B",sec:"인천대입구 ~ 부평 ~ 여의도 ~ 서울역 ~ 청량리 ~ 마석",lp:9,org:"국토교통부 · 국가철도공단 · 대우건설 컨소시엄",region:"인천 송도 ~ 서울 ~ 경기 남양주 마석",lat:37.580,lon:127.047,stage:3,
-  route:[[37.386,126.640],[37.426,126.700],[37.490,126.724],[37.520,126.924],[37.555,126.972],[37.580,127.047],[37.599,127.093],[37.642,127.127],[37.653,127.243],[37.652,127.312]],
+ {id:"gtxb",name:"GTX-B (인천대입구 ~ 마석)",cat:"gtx",ln:"GTX-B",st:["인천대입구", "인천시청", "부평", "여의도", "서울역", "청량리", "망우", "별내", "평내호평", "마석"],sec:"인천대입구 ~ 부평 ~ 여의도 ~ 서울역 ~ 청량리 ~ 마석",lp:9,org:"국토교통부 · 국가철도공단 · 대우건설 컨소시엄",region:"인천 송도 ~ 서울 ~ 경기 남양주 마석",lat:37.580,lon:127.047,stage:3,
+  route:[[37.386,126.640],[37.457,126.702],[37.490,126.724],[37.520,126.924],[37.555,126.972],[37.580,127.047],[37.599,127.093],[37.642,127.127],[37.653,127.243],[37.652,127.312]],
   scale:"총연장 약 82.8km · 정거장 14개소",period:"2024 ~ 2030(목표)",
   desc:"인천 송도에서 여의도·서울역·청량리를 거쳐 남양주 마석까지 잇는 노선. 민자 구간은 2026년 초 공정률 10% 안팎으로 공사 초기 단계이며, 2031년 전후 개통이 현실적이라는 전망도 있습니다.",
   tl:[["2019.08","예비타당성조사 통과"],["2024.03","착공식"],["2026","민자 구간 공정률 약 10%"],["2030","개통 목표(2031 전후 전망)",1]],
   chk:1,news:[["IB토마토 · GTX-B 본궤도","https://newstomato.com/ReadNews.aspx?no=1294859"]],
   src:"https://www.molit.go.kr"},
- {id:"gtxc",name:"GTX-C (덕정 ~ 수원)",cat:"gtx",ln:"GTX-C",sec:"덕정 ~ 의정부 ~ 창동 ~ 청량리 ~ 삼성 ~ 양재 ~ 과천 ~ 수원",lp:0,org:"국토교통부 · 현대건설 컨소시엄",region:"경기 양주 덕정 ~ 서울 ~ 경기 수원",lat:37.653,lon:127.047,stage:3,
+ {id:"gtxc",name:"GTX-C (덕정 ~ 수원)",cat:"gtx",ln:"GTX-C",st:["덕정", "의정부", "창동", "청량리", "삼성", "양재", "과천", "금정", "의왕", "수원"],sec:"덕정 ~ 의정부 ~ 창동 ~ 청량리 ~ 삼성 ~ 양재 ~ 과천 ~ 수원",lp:0,org:"국토교통부 · 현대건설 컨소시엄",region:"경기 양주 덕정 ~ 서울 ~ 경기 수원",lat:37.653,lon:127.047,stage:3,
   route:[[37.843,127.062],[37.738,127.046],[37.653,127.047],[37.580,127.047],[37.509,127.063],[37.484,127.034],[37.433,126.996],[37.372,126.943],[37.312,126.925],[37.266,127.000]],
   scale:"총연장 약 86.5km · 정거장 10개소",period:"2024 ~ 2031(목표)",
   desc:"양주 덕정에서 창동·청량리·삼성·양재를 지나 수원까지 남북을 잇는 노선. 공사비 분쟁으로 2년 가까이 멈췄다가 중재 판정과 협약 변경을 거쳐 2026년 하반기 본공사에 들어갔습니다. 개통 목표는 당초 2028년에서 2031년으로 늦춰졌습니다.",
@@ -258,35 +262,35 @@ const PROJECTS=[
   chk:1,news:[["시사저널e · GTX-C 드디어 착공","https://www.sisajournal-e.com/news/articleView.html?idxno=423713"],["아시아투데이 · 민투심 통과","https://www.asiatoday.co.kr/kn/view.php?key=20260825010008469"]],
   src:"https://www.molit.go.kr"},
 
- {id:"sinansan",name:"신안산선 복선전철",cat:"metro",ln:"신안산선",sec:"한양대(ERICA) · 시흥시청 ~ 광명 ~ 대림 ~ 여의도",lp:0,org:"국토교통부 · 넥스트레인(민자)",region:"경기 안산·시흥·광명 ~ 서울 영등포",lat:37.416,lon:126.885,stage:3,
+ {id:"sinansan",name:"신안산선 복선전철",cat:"metro",ln:"신안산선",st:["한양대", "중앙", "시흥시청", "광명", "구로디지털단지", "영등포", "여의도"],sec:"한양대(ERICA) · 시흥시청 ~ 광명 ~ 대림 ~ 여의도",lp:0,org:"국토교통부 · 넥스트레인(민자)",region:"경기 안산·시흥·광명 ~ 서울 영등포",lat:37.416,lon:126.885,stage:3,
   route:[[37.297,126.836],[37.316,126.838],[37.381,126.805],[37.416,126.885],[37.493,126.895],[37.516,126.907],[37.521,126.924]],
   scale:"총연장 약 44.7km",period:"2019 ~ 2028~2029(전망)",
   desc:"안산·시흥에서 광명을 거쳐 여의도까지 가는 광역전철. 2025년 4월 광명 구간 지하터널 붕괴 사고 이후 공사기간을 80개월에서 104개월로 늘리는 방안이 검토되면서 개통이 2028~2029년으로 밀릴 전망입니다.",
   tl:[["2019.09","착공"],["2024.08","개통 시기 2025.04 → 2026.12 변경 승인"],["2025.04","광명 구간 지하터널 붕괴 사고"],["2025.12","공사기간 104개월로 연장 검토"],["2028~2029","개통 전망",1]],
   chk:1,news:[["다음뉴스 · 신안산선 2년 더 늦어진다","https://v.daum.net/v/20251202120005179"],["정책브리핑 · 국토부 해명","https://www.korea.kr/briefing/actuallyView.do?newsId=148942307"]],
   src:"https://www.molit.go.kr"},
- {id:"wolpan",name:"월곶~판교 복선전철",cat:"metro",ln:"월곶판교선",sec:"월곶 ~ 시흥시청 ~ 광명 ~ 안양 ~ 인덕원 ~ 판교",lp:0,org:"국토교통부 · 국가철도공단",region:"경기 시흥 월곶 ~ 성남 판교",lat:37.401,lon:126.95,stage:3,
+ {id:"wolpan",name:"월곶~판교 복선전철",cat:"metro",ln:"월곶판교선",st:["월곶", "시흥시청", "광명", "안양", "인덕원", "서판교", "판교"],sec:"월곶 ~ 시흥시청 ~ 광명 ~ 안양 ~ 인덕원 ~ 판교",lp:0,org:"국토교통부 · 국가철도공단",region:"경기 시흥 월곶 ~ 성남 판교",lat:37.401,lon:126.95,stage:3,
   route:[[37.391,126.742],[37.381,126.805],[37.416,126.885],[37.401,126.922],[37.401,126.976],[37.380,127.080],[37.395,127.111]],
   scale:"총연장 약 34.2km · 정거장 11개소",period:"2024 ~ 2029",
   desc:"경기 서남부를 동서로 가로지르는 광역전철. 당초 2026년 개통 목표에서 여러 차례 늦춰졌고, 현재 목표는 2029년 12월입니다.",
   tl:[["2018","기본계획 고시(당초 2026년 개통 목표)"],["2024.04","실시계획 승인·착공"],["2028.11","종점부 공구 완공 목표",1],["2029.12","개통 목표",1]],
   chk:1,news:[["MTN · 실시계획 승인","https://news.mtn.co.kr/news-detail/2024040111304737315"]],
   src:"https://www.kr.or.kr"},
- {id:"wirye",name:"위례신사선 도시철도",cat:"metro",ln:"위례신사선",sec:"위례 ~ 가락시장 ~ 삼성 ~ 청담 ~ 신사",lp:0,org:"서울시 · 국토교통부",region:"서울 송파·강남, 경기 성남(위례)",lat:37.505,lon:127.08,stage:1,
+ {id:"wirye",name:"위례신사선 도시철도",cat:"metro",ln:"위례신사선",st:["위례", "가락시장", "삼성", "청담", "신사"],sec:"위례 ~ 가락시장 ~ 삼성 ~ 청담 ~ 신사",lp:0,org:"서울시 · 국토교통부",region:"서울 송파·강남, 경기 성남(위례)",lat:37.505,lon:127.08,stage:1,
   route:[[37.478,127.142],[37.493,127.118],[37.509,127.063],[37.519,127.053],[37.516,127.020]],
   scale:"총연장 약 14.8km · 총사업비 약 1.7조 원",period:"2008 ~ 미정",
   desc:"위례신도시 광역교통대책으로 2008년 계획됐지만 민자사업이 무산된 노선. 2026년 2월 재정사업으로 전환됐고, 예비타당성조사 통과 후 설계 단계로 넘어갑니다. 사업비 증액 가능성이 남은 과제입니다.",
   tl:[["2008","위례신도시 광역교통대책 반영"],["2024.06","민자사업자 협상 결렬"],["2026.02","도시철도망 계획 변경 승인(재정사업 전환)"],["2026","예비타당성조사 통과(보도)"],["미정","기본·실시설계 및 착공",1]],
   chk:1,news:[["아시아경제 · 재정사업 전환 최종 승인","https://view.asiae.co.kr/article/2026021308555778508"],["뉴데일리 · 남은 과제 3가지","https://biz.newdaily.co.kr/site/data/html/2026/02/23/2026022300102.html"]],
   src:"https://www.seoul.go.kr"},
- {id:"dongbuk",name:"동북선 경전철",cat:"metro",ln:"동북선",sec:"왕십리 ~ 고려대 ~ 미아사거리 ~ 하계 ~ 상계",lp:5,org:"서울시 · 동북선도시철도(민자)",region:"서울 성동·성북·강북·노원",lat:37.61,lon:127.05,stage:3,
+ {id:"dongbuk",name:"동북선 경전철",cat:"metro",ln:"동북선",st:["왕십리", "고려대", "미아사거리", "하계", "은행사거리", "상계"],sec:"왕십리 ~ 고려대 ~ 미아사거리 ~ 하계 ~ 상계",lp:5,org:"서울시 · 동북선도시철도(민자)",region:"서울 성동·성북·강북·노원",lat:37.61,lon:127.05,stage:3,
   route:[[37.561,127.037],[37.590,127.036],[37.613,127.030],[37.636,127.068],[37.652,127.075],[37.661,127.073]],
   scale:"총연장 약 13.4km · 정거장 16개소",period:"2020 ~ 2028",
   desc:"서울 동북권 교통 소외지역을 잇는 경전철. 상계~왕십리를 환승 없이 약 25분에 연결합니다. 안전기준 강화와 자재 수급 차질로 개통이 2026년 7월에서 2028년 8월로 늦춰지는 중입니다.",
   tl:[["2020.07","착공"],["2025","개통 목표 2027.11로 연기"],["2026","공기 연장 요청, 2028.08로 재조정 추진"],["2028.08","개통 목표",1]],
   chk:1,news:[["데일리팝 · 2028년 8월로 연기","http://www.dailypop.kr/news/articleView.html?idxno=104123"]],
   src:"https://www.seoul.go.kr"},
- {id:"cheongna",name:"서울도시철도 7호선 청라국제도시 연장",cat:"metro",ln:"7호선 청라연장",sec:"석남 ~ 인천 서구 ~ 청라국제도시",lp:4,org:"인천시 도시철도건설본부",region:"인천 서구 석남동 ~ 청라국제도시",lat:37.53,lon:126.65,stage:3,
+ {id:"cheongna",name:"서울도시철도 7호선 청라국제도시 연장",cat:"metro",ln:"7호선 청라연장",st:["석남", null, null, null, "청라국제도시"],sec:"석남 ~ 인천 서구 ~ 청라국제도시",lp:4,org:"인천시 도시철도건설본부",region:"인천 서구 석남동 ~ 청라국제도시",lat:37.53,lon:126.65,stage:3,
   route:[[37.506,126.677],[37.520,126.666],[37.535,126.645],[37.545,126.628],[37.556,126.624]],
   scale:"총연장 약 10.7km · 정거장 6개소",period:"2021 ~ 2033",
   desc:"7호선을 석남에서 청라국제도시까지 연장하는 사업. 공정률이 58%에 머물러 2027년 개통 계획이 무산됐고, 인천시가 시공사에 공정 정상화를 요구하고 있습니다.",
@@ -294,42 +298,42 @@ const PROJECTS=[
   chk:1,news:[["경기일보 · 2029년 말 개통 전망","https://www.kyeonggi.com/article/20260920580271"],["글로벌이코노믹 · 공정 정상화 촉구","https://g-enews.com/article/General-News/2026/11/2026111211365639119ae5042aca_1"]],
   src:"https://www.incheon.go.kr/iurail/IU010301"},
 
- {id:"incheonktx",name:"인천발 KTX 직결사업",cat:"ktx",ln:"인천발 KTX",sec:"송도 ~ 초지 ~ 어천 ~ 경부고속선 연결",lp:1,org:"국토교통부 · 국가철도공단 · 인천시",region:"인천 송도 ~ 경기 안산 초지 ~ 화성 어천",lat:37.32,lon:126.807,stage:3,
+ {id:"incheonktx",name:"인천발 KTX 직결사업",cat:"ktx",ln:"인천발 KTX",st:["송도", "초지", "어천", null],sec:"송도 ~ 초지 ~ 어천 ~ 경부고속선 연결",lp:1,org:"국토교통부 · 국가철도공단 · 인천시",region:"인천 송도 ~ 경기 안산 초지 ~ 화성 어천",lat:37.32,lon:126.807,stage:3,
   route:[[37.428,126.657],[37.320,126.807],[37.200,126.920],[37.170,126.985]],
   scale:"연결선 3.19km 신설 + 역 3곳 개량",period:"2021 ~ 2026",
   desc:"수인선과 경부고속선을 잇는 연결선을 새로 놓아 인천 송도에서 KTX를 탈 수 있게 하는 사업. 세 차례 연기 끝에 2026년 12월 개통을 목표로 하고, 초기에는 편도 12회 운행합니다.",
   tl:[["2021","착공"],["2025.07","공사 이행률 57%, 개통 2026.12로 조정"],["2025.12","공정률 약 64%"],["2026.12","개통 목표(편도 12회)",1]],
   chk:1,news:[["경향신문 · 2026년 12월 개통","https://www.khan.co.kr/article/202507291111001"],["철도경제신문 · 인천·수원발 KTX","https://www.redaily.co.kr/news/articleView.html?idxno=15525"]],
   src:"https://www.kr.or.kr"},
- {id:"suwonktx",name:"수원발 KTX 직결사업",cat:"ktx",ln:"수원발 KTX",sec:"수원 ~ 서정리 ~ 지제(경부고속선 연결)",lp:0,org:"국토교통부 · 국가철도공단",region:"경기 수원 ~ 평택",lat:37.14,lon:127.04,stage:3,
+ {id:"suwonktx",name:"수원발 KTX 직결사업",cat:"ktx",ln:"수원발 KTX",st:["수원", null, "서정리", "평택지제"],sec:"수원 ~ 서정리 ~ 지제(경부고속선 연결)",lp:0,org:"국토교통부 · 국가철도공단",region:"경기 수원 ~ 평택",lat:37.14,lon:127.04,stage:3,
   route:[[37.266,127.000],[37.150,127.040],[37.060,127.060],[37.018,127.070]],
   scale:"연결선 약 9.5km",period:"2021 ~ 2026",
   desc:"경부선과 수서평택고속선을 이어 수원에서 KTX가 출발하도록 하는 사업. 2025년 말 공정률은 약 70%이며 인천발 KTX와 함께 2026년 말 개통을 목표로 합니다.",
   tl:[["2021","착공"],["2025.12","공정률 약 70%"],["2026 말","개통 목표",1]],
   chk:1,news:[["철도경제신문 · 인천·수원발 KTX 올해 개통하나","https://www.redaily.co.kr/news/articleView.html?idxno=15525"]],
   src:"https://www.kr.or.kr"},
- {id:"pyeongosong",name:"평택~오송 고속철도 2복선화",cat:"ktx",ln:"평택~오송 2복선",sec:"평택지제 ~ 천안아산 ~ 오송(지하 복선 추가)",lp:1,org:"국토교통부 · 국가철도공단",region:"경기 평택 ~ 충남 천안 ~ 충북 청주 오송",lat:36.794,lon:127.104,stage:3,
+ {id:"pyeongosong",name:"평택~오송 고속철도 2복선화",cat:"ktx",ln:"평택~오송 2복선",st:["평택지제", "천안아산", "오송"],sec:"평택지제 ~ 천안아산 ~ 오송(지하 복선 추가)",lp:1,org:"국토교통부 · 국가철도공단",region:"경기 평택 ~ 충남 천안 ~ 충북 청주 오송",lat:36.794,lon:127.104,stage:3,
   route:[[37.018,127.070],[36.794,127.104],[36.620,127.327]],
   scale:"총연장 약 46km",period:"2022 ~ 2028",
   desc:"KTX·SRT가 모두 지나는 병목 구간에 고속선 2복선을 지하로 추가하는 사업. 주말 선로 혼잡도가 94%에 이르며, 완공되어야 인천·수원발 KTX 증편이 가능합니다.",
   tl:[["2022","착공"],["2026.05","주말 혼잡도 94.2% 지적, 2028 말 완료 계획 재확인"],["2028 말","완공 목표",1]],
   chk:1,news:[["전기신문 · 국가철도공단 2026년 계획","https://www.electimes.com/news/articleView.html?idxno=364053"]],
   src:"https://www.kr.or.kr"},
- {id:"nambu",name:"남부내륙철도 (김천~거제)",cat:"ktx",ln:"남부내륙철도",sec:"김천 ~ 성주 ~ 합천 ~ 진주 ~ 고성 ~ 통영 ~ 거제",lp:3,org:"국토교통부 · 국가철도공단",region:"경북 김천 ~ 경남 거제",lat:35.5,lon:128.2,stage:3,
+ {id:"nambu",name:"남부내륙철도 (김천~거제)",cat:"ktx",ln:"남부내륙철도",st:["김천", "성주", "합천", "진주", "고성", "통영", "거제"],sec:"김천 ~ 성주 ~ 합천 ~ 진주 ~ 고성 ~ 통영 ~ 거제",lp:3,org:"국토교통부 · 국가철도공단",region:"경북 김천 ~ 경남 거제",lat:35.5,lon:128.2,stage:3,
   route:[[36.120,128.180],[35.920,128.280],[35.570,128.170],[35.180,128.120],[34.970,128.320],[34.860,128.430],[34.880,128.620]],
   scale:"총연장 약 174.6km · 총사업비 약 7.1조 원",period:"2026 ~ 2031",
   desc:"경부고속선 김천에서 갈라져 거제까지 가는 고속화철도. 서울~거제를 2시간대로 잇습니다. 통영~거제 견내량 해역 아래에 국내 첫 철도 해저터널을 놓습니다.",
   tl:[["2019.01","예비타당성조사 면제"],["2026.02.06","착공식(14개 공구 중 10개 계약)"],["2026.03","나머지 공구 입찰 착수"],["2031","개통 목표",1]],
   chk:1,news:[["경향신문 · 남부내륙철도 첫 삽","https://www.khan.co.kr/article/202602061506001"],["뉴시스 · 착공식","https://www.newsis.com/view/NISX20260206_0003505181"]],
   src:"https://www.kr.or.kr"},
- {id:"honam2",name:"호남고속철도 2단계 (광주송정~목포)",cat:"ktx",ln:"호남고속 2단계",sec:"광주송정 ~ 고막원 ~ 무안국제공항 ~ 목포(임성리)",lp:2,org:"국토교통부 · 국가철도공단",region:"광주 광산구 ~ 전남 나주·무안 ~ 목포",lat:34.99,lon:126.6,stage:3,
+ {id:"honam2",name:"호남고속철도 2단계 (광주송정~목포)",cat:"ktx",ln:"호남고속 2단계",st:["광주송정", "고막원", "무안국제공항", "목포"],sec:"광주송정 ~ 고막원 ~ 무안국제공항 ~ 목포(임성리)",lp:2,org:"국토교통부 · 국가철도공단",region:"광주 광산구 ~ 전남 나주·무안 ~ 목포",lat:34.99,lon:126.6,stage:3,
   route:[[35.137,126.790],[35.000,126.620],[34.992,126.383],[34.770,126.430]],
   scale:"총연장 약 77km",period:"2020 ~ 2027 이후",
   desc:"호남고속선을 무안국제공항을 거쳐 목포까지 잇는 2단계 사업. 예산 부족으로 2026년 개통이 어려워졌고, 광주 민간공항의 무안 이전과 연계하려던 계획도 재조정되고 있습니다.",
   tl:[["2017","무안공항 경유 노선 확정"],["2020","착공"],["2026","예산이 건의액의 절반 수준만 반영"],["2027~","개통 목표(지연 가능)",1]],
   chk:1,news:[["kbc · 광주공항 무안 이전 일정","https://news.ikbc.co.kr/article/view/kbc202608060026"],["무안신문 · 2026년 개통 빨간불","http://www.muannews.com/news/articleView.html?idxno=506245"]],
   src:"https://www.kr.or.kr"},
- {id:"dongseo",name:"춘천~속초 동서고속화철도",cat:"ktx",ln:"동서고속화철도",sec:"춘천 ~ 화천 ~ 양구 ~ 인제 ~ 백담 ~ 속초",lp:3,org:"국토교통부 · 국가철도공단 · 강원도",region:"강원 춘천 ~ 속초",lat:38.07,lon:128.17,stage:3,
+ {id:"dongseo",name:"춘천~속초 동서고속화철도",cat:"ktx",ln:"동서고속화철도",st:["춘천", "화천", "양구", "인제", "백담", "속초"],sec:"춘천 ~ 화천 ~ 양구 ~ 인제 ~ 백담 ~ 속초",lp:3,org:"국토교통부 · 국가철도공단 · 강원도",region:"강원 춘천 ~ 속초",lat:38.07,lon:128.17,stage:3,
   route:[[37.885,127.717],[38.106,127.708],[38.110,127.990],[38.070,128.170],[38.160,128.370],[38.200,128.590]],
   scale:"총연장 약 93.7km · 총사업비 약 3조 원",period:"2021 ~ 2029",
   desc:"수도권에서 속초까지 철도로 잇는 강원 횡단 노선. 일반 구간 착공과 보상이 늦어져 개통이 2027년에서 2029년 상반기로 조정됐습니다.",
@@ -415,7 +419,7 @@ const proj=(lon,lat)=>[(lon-124)*K*100,(39-lat)*100];
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const el=(n,a={},p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
 
-const gLand=el('g',{},svg), gRoute=el('g',{},svg), gMk=el('g',{},svg), gLbl=el('g',{},svg), gRLbl=el('g',{},svg);
+const gLand=el('g',{},svg), gRoute=el('g',{},svg), gMk=el('g',{},svg), gLbl=el('g',{},svg), gSLbl=el('g',{},svg), gRLbl=el('g',{},svg);
 for(const pr of KOREA){
   const d=pr.p.map(r=>'M'+r.map(([x,y])=>proj(x,y).map(v=>v.toFixed(1)).join(',')).join('L')+'Z').join('');
   el('path',{d,class:'prov'},gLand).appendChild(el('title')).textContent=pr.n;
@@ -436,6 +440,9 @@ function apply(){
   gLbl.querySelectorAll('text').forEach(t=>{const fs=11.5*u;t.setAttribute('font-size',fs);t.setAttribute('dx',fs*0.9);t.setAttribute('dy',fs*0.35);t.style.strokeWidth=3*u+'px'});
   gLbl.style.display = s<0.45 ? '' : 'none';
   gMk.querySelectorAll('.stn').forEach(c=>c.style.display = s<0.6 ? '' : 'none');
+  // 기착지 이름: GTX·KTX는 중간 확대부터, 전철은 더 확대했을 때 표시
+  gSLbl.querySelectorAll('text').forEach(t=>{const fs=10.5*u;t.setAttribute('font-size',fs);t.setAttribute('dx',fs*0.55);t.setAttribute('dy',fs*1.15);t.style.strokeWidth=3*u+'px';
+    t.style.display = s < (t.dataset.kind==='metro'?0.3:0.5) ? '' : 'none'});
   gRLbl.querySelectorAll('text').forEach(t=>{const fs=12*u;t.setAttribute('font-size',fs);t.setAttribute('dx',fs*0.6);t.setAttribute('dy',-fs*0.5);t.style.strokeWidth=3.5*u+'px';
     t.style.display = (t.dataset.kind==='metro' && s>0.6) ? 'none' : ''});
 }
@@ -474,10 +481,11 @@ new ResizeObserver(()=>{const s=vb.w/base;const cx=vb.x+vb.w/2,cy=vb.y+vb.h/2;fi
 const state={cats:new Set(Object.keys(CATS)),stages:new Set([0,1,2,3,4]),q:"",sel:null};
 const tip=document.getElementById('tip');
 function showTip(e,txt){const r=svg.parentElement.getBoundingClientRect();tip.textContent=txt;tip.style.left=(e.clientX-r.left)+'px';tip.style.top=(e.clientY-r.top)+'px';tip.hidden=false}
-const visible=p=>state.cats.has(p.cat)&&state.stages.has(p.stage)&&(!state.q||(p.name+p.region+p.org+(p.ln||"")).toLowerCase().includes(state.q));
+const visible=p=>state.cats.has(p.cat)&&state.stages.has(p.stage)&&(!state.q||(p.name+p.region+p.org+(p.ln||"")+(p.st||[]).join("")).toLowerCase().includes(state.q));
 
 function drawMap(){
-  gRoute.innerHTML="";gMk.innerHTML="";gLbl.innerHTML="";gRLbl.innerHTML="";
+  gRoute.innerHTML="";gMk.innerHTML="";gLbl.innerHTML="";gRLbl.innerHTML="";gSLbl.innerHTML="";
+  const seen=new Set();
   const list=PROJECTS.filter(visible);
   for(const p of list){
     const col=css(CATS[p.cat].c);
@@ -490,7 +498,12 @@ function drawMap(){
       hit.addEventListener('pointermove',e=>showTip(e,p.name));
       hit.addEventListener('pointerleave',()=>tip.hidden=true);
       hit.addEventListener('click',()=>{if(!moved)select(p.id,false)});
-      for(const [la,lo] of p.route){const[x,y]=proj(lo,la);const c=el('circle',{cx:x,cy:y,fill:css('--panel'),stroke:col,class:'stn'},gMk);c.dataset.r=2.4;c.style.pointerEvents='none'}
+      p.route.forEach(([la,lo],i)=>{
+        const nm=p.st?p.st[i]:'', [x,y]=proj(lo,la);
+        if(nm===null) return; // 역이 아닌 꺾임점
+        const c=el('circle',{cx:x,cy:y,fill:css('--panel'),stroke:col,class:'stn'},gMk);c.dataset.r=2.6;c.style.pointerEvents='none';
+        if(nm && !seen.has(nm)){seen.add(nm);const s=el('text',{x,y,class:'slbl'},gSLbl);s.textContent=nm;s.dataset.kind=p.cat}
+      });
       const [la,lo]=p.route[p.lp??Math.floor(p.route.length/2)], [x,y]=proj(lo,la);
       const t=el('text',{x,y,class:'rlbl'+(sel?' sel':''),fill:col},gRLbl); t.dataset.kind=p.cat; t.textContent=p.ln||p.name;
     }
@@ -561,7 +574,7 @@ function renderDetail(){
     <div class="org">${p.org}</div>
     <div class="steps">${STAGES.map((s,i)=>`<i class="${i<=p.stage?'on':''}"></i>`).join('')}</div>
     <div class="steplbl">${STAGES.map((s,i)=>`<span class="${i===p.stage?'on':''}">${s}</span>`).join('')}</div>
-    <dl>${p.ln?`<dt>노선</dt><dd><b style="color:${col}">${p.ln}</b></dd><dt>구간</dt><dd>${p.sec}</dd>`:''}<dt>위치</dt><dd>${p.region}</dd><dt>규모</dt><dd>${p.scale}</dd><dt>사업기간</dt><dd>${p.period}</dd></dl>
+    <dl>${p.ln?`<dt>노선</dt><dd><b style="color:${col}">${p.ln}</b></dd><dt>구간</dt><dd>${p.sec}</dd>${p.st?`<dt>주요 기착지</dt><dd><ol class="stops">${p.st.filter(Boolean).map(n=>`<li>${n}</li>`).join('')}</ol></dd>`:''}`:''}<dt>위치</dt><dd>${p.region}</dd><dt>규모</dt><dd>${p.scale}</dd><dt>사업기간</dt><dd>${p.period}</dd></dl>
     <p class="desc">${p.desc}</p>
     <div class="h3">추진 경과</div>
     <ul class="tl">${p.tl.map(([d,t,f])=>`<li class="${f?'future':''}"><time>${d}</time>${t}${f?' <span class="note">(예정)</span>':''}</li>`).join('')}</ul>
