@@ -58,6 +58,10 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 400px;
 .route{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.85;cursor:pointer}
 .mk{cursor:pointer;stroke:var(--panel);vector-effect:non-scaling-stroke;stroke-width:1.5}
 .mk.sel{stroke:var(--ink);stroke-width:2.5}
+.area{fill-opacity:.28;stroke-width:1.6;stroke-linejoin:round;vector-effect:non-scaling-stroke;cursor:pointer}
+.area:hover{fill-opacity:.42}
+.area.approx{fill-opacity:.12;stroke-opacity:.7;stroke-width:1.2}
+.area.sel{fill-opacity:.48;stroke-width:3}
 .halo{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke;opacity:.9}
 .lbl{font-family:var(--font);fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:3px;pointer-events:none}
 .zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:4px}
@@ -167,8 +171,9 @@ const CATS={
 };
 const STAGES=["계획 발표","지구지정·승인","보상·설계","공사 중","준공·운영"];
 
-/* 데이터는 src/data.js 에서 빌드 때 들어갑니다 */
+/* 데이터는 src/data.js, 구역 경계는 src/areas.js 에서 빌드 때 들어갑니다 */
 /*__DATA__*/
+/*__AREAS__*/
 
 /* ---------- 지도 ---------- */
 const svg=document.getElementById('map');
@@ -178,7 +183,7 @@ const proj=(lon,lat)=>[(lon-124)*K*100,(39-lat)*100];
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const el=(n,a={},p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
 
-const gLand=el('g',{},svg), gRoute=el('g',{},svg), gMk=el('g',{},svg), gLbl=el('g',{},svg), gSLbl=el('g',{},svg), gRLbl=el('g',{},svg);
+const gLand=el('g',{},svg), gArea=el('g',{},svg), gRoute=el('g',{},svg), gMk=el('g',{},svg), gLbl=el('g',{},svg), gSLbl=el('g',{},svg), gRLbl=el('g',{},svg);
 for(const pr of KOREA){
   const d=pr.p.map(r=>'M'+r.map(([x,y])=>proj(x,y).map(v=>v.toFixed(1)).join(',')).join('L')+'Z').join('');
   el('path',{d,class:'prov'},gLand).appendChild(el('title')).textContent=pr.n;
@@ -199,6 +204,8 @@ function apply(){
   gLbl.querySelectorAll('text').forEach(t=>{const fs=11.5*u;t.setAttribute('font-size',fs);t.setAttribute('dx',fs*0.9);t.setAttribute('dy',fs*0.35);t.style.strokeWidth=3*u+'px'});
   gLbl.style.display = s<0.45 ? '' : 'none';
   gMk.querySelectorAll('.stn').forEach(c=>c.style.display = s<0.6 ? '' : 'none');
+  // 충분히 확대하면 점 대신 구역 경계만 보여 줌
+  gMk.querySelectorAll('[data-area]').forEach(c=>c.style.display = s<0.12 ? 'none' : '');
   // 기착지 이름: GTX·KTX는 중간 확대부터, 전철은 더 확대했을 때 표시
   gSLbl.querySelectorAll('text').forEach(t=>{const fs=10.5*u;t.setAttribute('font-size',fs);t.setAttribute('dx',fs*0.55);t.setAttribute('dy',fs*1.15);t.style.strokeWidth=3*u+'px';
     t.style.display = s < (t.dataset.kind==='metro'?0.3:0.5) ? '' : 'none'});
@@ -243,7 +250,7 @@ function showTip(e,txt){const r=svg.parentElement.getBoundingClientRect();tip.te
 const visible=p=>state.cats.has(p.cat)&&state.stages.has(p.stage)&&(!state.q||(p.name+p.region+p.org+(p.ln||"")+(p.st||[]).join("")).toLowerCase().includes(state.q));
 
 function drawMap(){
-  gRoute.innerHTML="";gMk.innerHTML="";gLbl.innerHTML="";gRLbl.innerHTML="";gSLbl.innerHTML="";
+  gArea.innerHTML="";gRoute.innerHTML="";gMk.innerHTML="";gLbl.innerHTML="";gRLbl.innerHTML="";gSLbl.innerHTML="";
   const seen=new Set();
   const list=PROJECTS.filter(visible);
   for(const p of list){
@@ -274,12 +281,20 @@ function drawMap(){
   for(const p of list){
     if(p.route)continue;
     const col=css(CATS[p.cat].c);const[x,y]=proj(p.lon,p.lat);
-    if(state.sel===p.id){const h=el('circle',{cx:x,cy:y,class:'halo'},gMk);h.dataset.r=13}
+    const A=AREAS[p.id];
+    if(A){ // 사업지구 구역 경계
+      const d=A.rings.map(r=>'M'+r.map(([lo,la])=>proj(lo,la).map(v=>v.toFixed(3)).join(',')).join('L')+'Z').join('');
+      const a=el('path',{d,class:'area'+(A.src==='approx'?' approx':'')+(state.sel===p.id?' sel':''),fill:col,stroke:col,'fill-rule':'nonzero'},gArea);
+      a.addEventListener('pointermove',e=>showTip(e,p.name));
+      a.addEventListener('pointerleave',()=>tip.hidden=true);
+      a.addEventListener('click',()=>{if(!moved)select(p.id,false)});
+    }
+    if(state.sel===p.id){const h=el('circle',{cx:x,cy:y,class:'halo'},gMk);h.dataset.r=13;if(A)h.dataset.area=1}
     const c=el('circle',{cx:x,cy:y,fill:col,class:'mk'+(state.sel===p.id?' sel':''),tabindex:-1},gMk);
-    c.dataset.r=state.sel===p.id?8:6.5;
+    c.dataset.r=state.sel===p.id?8:6.5; if(A) c.dataset.area=1;
     c.addEventListener('pointermove',e=>showTip(e,p.name));
     c.addEventListener('pointerleave',()=>tip.hidden=true);
-    c.addEventListener('click',()=>{if(!moved)select(p.id,false)});
+    c.addEventListener('click',()=>{if(!moved)select(p.id,true)}); // 점을 누르면 구역으로 확대
     const t=el('text',{x:x,y:y,dx:0,dy:0,class:'lbl'},gLbl);
     t.textContent=p.name.replace(/ 공공주택지구| \(.*\)/g,'');
     t.setAttribute('transform',`translate(0,0)`);
@@ -337,7 +352,7 @@ function renderDetail(){
     <div class="org">${p.org}</div>
     <div class="steps">${STAGES.map((s,i)=>`<i class="${i<=p.stage?'on':''}"></i>`).join('')}</div>
     <div class="steplbl">${STAGES.map((s,i)=>`<span class="${i===p.stage?'on':''}">${s}</span>`).join('')}</div>
-    <dl>${p.ln?`<dt>노선</dt><dd><b style="color:${col}">${p.ln}</b></dd><dt>구간</dt><dd>${p.sec}</dd>${p.dest?`<dt>운행 종착지</dt><dd>${p.dest}</dd>`:''}${p.st?`<dt>주요 기착지</dt><dd><ol class="stops">${p.st.filter(Boolean).map(n=>`<li>${n}</li>`).join('')}</ol></dd>`:''}`:''}<dt>위치</dt><dd>${p.region}</dd><dt>규모</dt><dd>${p.scale}</dd><dt>사업기간</dt><dd>${p.period}</dd></dl>
+    <dl>${p.ln?`<dt>노선</dt><dd><b style="color:${col}">${p.ln}</b></dd><dt>구간</dt><dd>${p.sec}</dd>${p.dest?`<dt>운행 종착지</dt><dd>${p.dest}</dd>`:''}${p.st?`<dt>주요 기착지</dt><dd><ol class="stops">${p.st.filter(Boolean).map(n=>`<li>${n}</li>`).join('')}</ol></dd>`:''}`:''}<dt>위치</dt><dd>${p.region}</dd>${AREAS[p.id]?`<dt>구역 경계</dt><dd class="note" style="font-size:12px">${AREAS[p.id].src==='approx'?`공식 경계 자료를 구하지 못해 ${AREAS[p.id].note||'사업 면적'}(약 ${(AREAS[p.id].m2/1e4).toLocaleString('ko-KR',{maximumFractionDigits:0})}만㎡)만큼의 원으로 개략 표시`:`OpenStreetMap 지도 데이터 기준(${AREAS[p.id].label||'기여자 작성'}). 고시된 지구계획 경계와 다를 수 있습니다`}</dd>`:''}<dt>규모</dt><dd>${p.scale}</dd><dt>사업기간</dt><dd>${p.period}</dd></dl>
     <p class="desc">${p.desc}</p>
     <div class="h3">추진 경과</div>
     <ul class="tl">${p.tl.map(([d,t,f])=>`<li class="${f?'future':''}"><time>${d}</time>${t}${f?' <span class="note">(예정)</span>':''}</li>`).join('')}</ul>
@@ -349,7 +364,15 @@ function renderDetail(){
 function select(id,fly){
   state.sel=id;tip.hidden=true;
   const p=PROJECTS.find(x=>x.id===id);
-  if(fly&&p){const[x,y]=proj(p.lon,p.lat);const w=Math.min(vb.w,base*0.35);const k=w/vb.w;vb={w,h:vb.h*k,x:x-w/2,y:y-vb.h*k/2}}
+  if(fly&&p){
+    const A=AREAS[p.id];
+    if(A){ // 구역 전체가 보이도록 확대
+      const pts=A.rings.flat().map(([lo,la])=>proj(lo,la)), xs=pts.map(q=>q[0]), ys=pts.map(q=>q[1]);
+      const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys), ar=vb.w/vb.h;
+      let w=Math.max((x1-x0)*2.2,(y1-y0)*2.2*ar,base*0.025); const h=w/ar;
+      vb={w,h,x:(x0+x1)/2-w/2,y:(y0+y1)/2-h/2};
+    } else {const[x,y]=proj(p.lon,p.lat);const w=Math.min(vb.w,base*0.35);const k=w/vb.w;vb={w,h:vb.h*k,x:x-w/2,y:y-vb.h*k/2}}
+  }
   drawMap();renderList();renderDetail();
   if(window.innerWidth<=900&&!fly) document.getElementById('detail').scrollIntoView({behavior:'smooth',block:'start'});
 }

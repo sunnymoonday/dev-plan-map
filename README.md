@@ -8,6 +8,7 @@
 ## 파일 구조
 - `src/data.js` — 사업 데이터(`PROJECTS`)와 최종 업데이트 날짜(`UPDATED`). 내용을 고칠 때는 이 파일만 수정합니다.
 - `src/template.html` — 페이지 화면과 지도 코드
+- `src/areas.js` — 사업지구 구역 경계(`AREAS`). OpenStreetMap(ODbL) 폴리곤이 있는 지구는 그 경계, 없는 지구는 사업 면적만큼의 원(개략)
 - `src/geo_min.js` — 시·도 경계([southkorea-maps](https://github.com/southkorea/southkorea-maps), KOSTAT 2013 간략화)
 - `build.py` — 위 세 파일을 합쳐 `index.html`을 만듭니다: `python build.py`
 
