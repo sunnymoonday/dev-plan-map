@@ -1,0 +1,363 @@
+<title>국토 개발계획 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 지도(왼쪽, 넓게) + 상세 패널(오른쪽). 좁은 화면에서는 위아래로 쌓음. 측량도면 같은 청회색 바탕 */
+:root{
+  --bg:#eef1f3; --panel:#ffffff; --ink:#18222b; --muted:#5d6b77; --line:#d3dae0;
+  --land:#f8faf9; --land-stroke:#b9c4cc; --sea:#dfe8ee; --hover:#e8eef2;
+  --accent:#0b6e75;
+  --c-house:#c2410c; --c-gtx:#1d4ed8; --c-metro:#a16207; --c-ktx:#dc2626; --c-air:#7c3aed; --c-ind:#047857; --c-urban:#0e7490; --c-admin:#be185d;
+  --st-done:#0b6e75; --st-todo:#d3dae0;
+  --font:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10161b; --panel:#172028; --ink:#e4eaee; --muted:#93a2ae; --line:#2b3843;
+  --land:#1d2831; --land-stroke:#3b4b58; --sea:#0d1418; --hover:#22303b; --accent:#3cc4cc;
+  --c-house:#fb923c; --c-gtx:#60a5fa; --c-metro:#facc15; --c-ktx:#f87171; --c-air:#a78bfa; --c-ind:#34d399; --c-urban:#22d3ee; --c-admin:#f472b6;
+  --st-done:#3cc4cc; --st-todo:#2b3843; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161b; --panel:#172028; --ink:#e4eaee; --muted:#93a2ae; --line:#2b3843;
+  --land:#1d2831; --land-stroke:#3b4b58; --sea:#0d1418; --hover:#22303b; --accent:#3cc4cc;
+  --c-house:#fb923c; --c-gtx:#60a5fa; --c-metro:#facc15; --c-ktx:#f87171; --c-air:#a78bfa; --c-ind:#34d399; --c-urban:#22d3ee; --c-admin:#f472b6;
+  --st-done:#3cc4cc; --st-todo:#2b3843; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;box-sizing:border-box}
+*{box-sizing:border-box}
+.wrap{max-width:1440px;margin:0 auto;display:flex;flex-direction:column;gap:12px;height:100%}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+.upd{display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;font-size:12px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.upd time{font-family:var(--mono);font-weight:500}
+.upd-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.stats{display:flex;gap:18px;font-variant-numeric:tabular-nums}
+.stat b{display:block;font-size:20px;font-family:var(--mono);font-weight:500}
+.stat span{font-size:11px;color:var(--muted);letter-spacing:.04em}
+.filters{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.fgroup{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.flabel{font-size:11px;color:var(--muted);letter-spacing:.06em;margin-right:2px}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:4px 10px;font:inherit;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="false"]{opacity:.45}
+.chip:hover{background:var(--hover)}
+.chip:focus-visible,button:focus-visible,input:focus-visible,.item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+#q{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;width:200px;max-width:100%}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:12px}
+.mapbox{position:relative;background:var(--sea);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-height:420px}
+#map{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#map.drag{cursor:grabbing}
+.prov{fill:var(--land);stroke:var(--land-stroke);stroke-width:.8;vector-effect:non-scaling-stroke}
+.route.hit{stroke:transparent;opacity:1}
+.stn{stroke-width:1.5;vector-effect:non-scaling-stroke}
+.rlbl{font-family:var(--font);font-weight:700;paint-order:stroke;stroke:var(--land);stroke-linejoin:round;pointer-events:none}
+.slbl{font-family:var(--font);font-weight:500;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-linejoin:round;pointer-events:none}
+.route{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.85;cursor:pointer}
+.mk{cursor:pointer;stroke:var(--panel);vector-effect:non-scaling-stroke;stroke-width:1.5}
+.mk.sel{stroke:var(--ink);stroke-width:2.5}
+.halo{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke;opacity:.9}
+.lbl{font-family:var(--font);fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:3px;pointer-events:none}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:4px}
+.zoom button{width:32px;height:32px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:16px;cursor:pointer}
+.legend{position:absolute;left:10px;bottom:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:11.5px;display:flex;flex-wrap:wrap;gap:4px 12px;max-width:calc(100% - 20px)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.scale{position:absolute;right:10px;bottom:10px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--panel);font-size:12px;padding:4px 8px;border-radius:5px;white-space:nowrap;transform:translate(-50%,-130%)}
+aside{background:var(--panel);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.detail{padding:16px 18px;border-bottom:1px solid var(--line);overflow:auto;max-height:65%}
+.detail:empty{display:none}
+.cat{font-size:11.5px;font-weight:600;letter-spacing:.06em;display:inline-flex;gap:6px;align-items:center}
+.detail h2{font-size:19px;margin:4px 0 2px;text-wrap:balance}
+.org{color:var(--muted);font-size:12.5px}
+.badge{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--hover);color:var(--accent);margin-left:6px;vertical-align:2px}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin:14px 0 4px}
+.steps i{height:6px;border-radius:2px;background:var(--st-todo)}
+.steps i.on{background:var(--st-done)}
+.steplbl{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;font-size:10.5px;color:var(--muted)}
+.steplbl span.on{color:var(--ink);font-weight:600}
+dl{display:grid;grid-template-columns:76px 1fr;gap:6px 10px;margin:14px 0;font-size:13px}
+dt{color:var(--muted)}
+dd{margin:0;min-width:0}
+.stops{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 0;font-size:12.5px}
+.stops li{display:inline-flex;align-items:center}
+.stops li:not(:last-child)::after{content:"";width:12px;height:2px;background:var(--line);margin:0 5px}
+.desc{font-size:13.5px;margin:0 0 12px}
+.tl{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:8px;font-size:13px}
+.tl li{position:relative}
+.tl li::before{content:"";position:absolute;left:-20px;top:7px;width:10px;height:10px;border-radius:50%;background:var(--panel);border:2px solid var(--st-done)}
+.tl li.future::before{border-color:var(--st-todo);border-style:dashed}
+.tl time{font-family:var(--mono);font-size:12px;color:var(--muted);margin-right:6px}
+.h3{font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--muted);margin:16px 0 8px}
+.src{font-size:12px;margin-top:14px;color:var(--muted)}
+.src a,.news a{color:var(--accent)}
+.news{margin:0;padding-left:18px;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
+.listhead{display:flex;justify-content:space-between;align-items:center;padding:10px 18px 6px;font-size:12px;color:var(--muted)}
+.list{overflow:auto;flex:1;min-height:0;padding:0 8px 8px}
+.item{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:7px;cursor:pointer}
+.item:hover{background:var(--hover)}
+.item.sel{background:var(--hover);box-shadow:inset 0 0 0 1px var(--line)}
+.item .t{font-size:13.5px;font-weight:500;min-width:0}
+.item .m{font-size:11.5px;color:var(--muted)}
+.item .s{font-size:11px;color:var(--muted);white-space:nowrap}
+.empty{padding:20px;color:var(--muted);text-align:center}
+.note{font-size:11.5px;color:var(--muted)}
+@media (max-width:900px){
+  body{height:auto}
+  .wrap{height:auto}
+  main{grid-template-columns:1fr}
+  .mapbox{height:62vh;min-height:360px}
+  aside{max-height:none}
+  .detail{max-height:none}
+  .list{max-height:420px}
+}
+@media (prefers-reduced-motion:no-preference){.halo{animation:pulse 1.6s ease-out infinite}}
+@keyframes pulse{0%{opacity:.9}100%{opacity:0}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>국토 개발계획 지도</h1>
+      <p class="sub">정부·공공기관이 발표한 주요 개발계획의 위치와 진행 단계. 지도의 점이나 노선을 누르면 상세 내용이 나옵니다.</p>
+      <p class="upd"><span class="upd-dot" aria-hidden="true"></span>최종 업데이트 <time id="upd"></time> · 하루 한 번 언론 보도를 확인해 갱신합니다</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+  <div class="filters">
+    <div class="fgroup" id="fcat"><span class="flabel">분야</span></div>
+    <div class="fgroup" id="fstage"><span class="flabel">단계</span></div>
+    <input id="q" type="search" placeholder="사업명·노선·역 이름 검색" aria-label="사업 검색">
+  </div>
+  <main>
+    <div class="mapbox">
+      <svg id="map" role="img" aria-label="대한민국 개발계획 지도"></svg>
+      <div class="zoom">
+        <button id="zin" aria-label="확대">+</button>
+        <button id="zout" aria-label="축소">−</button>
+        <button id="zreset" aria-label="전체 보기" style="font-size:12px">⤢</button>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <aside>
+      <div class="detail" id="detail"></div>
+      <div class="listhead"><span id="count"></span><span class="note" id="updnote"></span></div>
+      <div class="list" id="list"></div>
+    </aside>
+  </main>
+  <p class="note">진행 단계와 일정은 각 기관 보도자료·사업 홈페이지 공개 내용을 정리한 것으로, 이후 변경될 수 있습니다. 정확한 최신 현황은 각 항목의 출처 링크에서 확인하세요.</p>
+</div>
+
+<script>
+/*__KOREA__*/
+</script>
+<script>
+const CATS={
+  house:{n:"주택·신도시",c:"--c-house"},
+  metro:{n:"전철",c:"--c-metro",line:1},
+  gtx:{n:"GTX",c:"--c-gtx",line:1},
+  ktx:{n:"KTX·고속철도",c:"--c-ktx",line:1},
+  air:{n:"공항·항만",c:"--c-air"},
+  ind:{n:"산업단지",c:"--c-ind"},
+  urban:{n:"도시정비·재생",c:"--c-urban"},
+  admin:{n:"행정·복합도시",c:"--c-admin"}
+};
+const STAGES=["계획 발표","지구지정·승인","보상·설계","공사 중","준공·운영"];
+
+/* 데이터는 src/data.js 에서 빌드 때 들어갑니다 */
+/*__DATA__*/
+
+/* ---------- 지도 ---------- */
+const svg=document.getElementById('map');
+const NS="http://www.w3.org/2000/svg";
+const K=Math.cos(36*Math.PI/180);
+const proj=(lon,lat)=>[(lon-124)*K*100,(39-lat)*100];
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const el=(n,a={},p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+
+const gLand=el('g',{},svg), gRoute=el('g',{},svg), gMk=el('g',{},svg), gLbl=el('g',{},svg), gSLbl=el('g',{},svg), gRLbl=el('g',{},svg);
+for(const pr of KOREA){
+  const d=pr.p.map(r=>'M'+r.map(([x,y])=>proj(x,y).map(v=>v.toFixed(1)).join(',')).join('L')+'Z').join('');
+  el('path',{d,class:'prov'},gLand).appendChild(el('title')).textContent=pr.n;
+}
+const FULL=(()=>{const a=proj(125.0,38.65),b=proj(130.0,33.05);return{x:a[0],y:a[1],w:b[0]-a[0],h:b[1]-a[1]}})();
+let vb={...FULL};
+function fit(){
+  const r=svg.getBoundingClientRect(); if(!r.width) return;
+  const ar=r.width/r.height, far=FULL.w/FULL.h;
+  vb = ar>far ? {w:FULL.h*ar,h:FULL.h,x:FULL.x-(FULL.h*ar-FULL.w)/2,y:FULL.y} : {w:FULL.w,h:FULL.w/ar,x:FULL.x,y:FULL.y-(FULL.w/ar-FULL.h)/2};
+  base=vb.w; apply();
+}
+let base=FULL.w;
+function apply(){
+  svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  const s=vb.w/base, u=vb.w/(svg.clientWidth||800); // u: 화면 1px당 지도 단위
+  gMk.querySelectorAll('circle').forEach(c=>c.setAttribute('r',(c.dataset.r||6)*u));
+  gLbl.querySelectorAll('text').forEach(t=>{const fs=11.5*u;t.setAttribute('font-size',fs);t.setAttribute('dx',fs*0.9);t.setAttribute('dy',fs*0.35);t.style.strokeWidth=3*u+'px'});
+  gLbl.style.display = s<0.45 ? '' : 'none';
+  gMk.querySelectorAll('.stn').forEach(c=>c.style.display = s<0.6 ? '' : 'none');
+  // 기착지 이름: GTX·KTX는 중간 확대부터, 전철은 더 확대했을 때 표시
+  gSLbl.querySelectorAll('text').forEach(t=>{const fs=10.5*u;t.setAttribute('font-size',fs);t.setAttribute('dx',fs*0.55);t.setAttribute('dy',fs*1.15);t.style.strokeWidth=3*u+'px';
+    t.style.display = s < (t.dataset.kind==='metro'?0.3:0.5) ? '' : 'none'});
+  gRLbl.querySelectorAll('text').forEach(t=>{const fs=12*u;t.setAttribute('font-size',fs);t.setAttribute('dx',fs*0.6);t.setAttribute('dy',-fs*0.5);t.style.strokeWidth=3.5*u+'px';
+    t.style.display = (t.dataset.kind==='metro' && s>0.6) ? 'none' : ''});
+}
+function zoomAt(f,cx,cy){
+  const nw=Math.min(Math.max(vb.w*f,base*0.04),base*1.4), k=nw/vb.w;
+  if(cx==null){cx=vb.x+vb.w/2;cy=vb.y+vb.h/2}
+  vb={x:cx-(cx-vb.x)*k,y:cy-(cy-vb.y)*k,w:nw,h:vb.h*k}; apply();
+}
+function toSvg(e){const r=svg.getBoundingClientRect();return[vb.x+(e.clientX-r.left)/r.width*vb.w,vb.y+(e.clientY-r.top)/r.height*vb.h]}
+svg.addEventListener('wheel',e=>{e.preventDefault();const[x,y]=toSvg(e);zoomAt(e.deltaY>0?1.2:1/1.2,x,y)},{passive:false});
+const ptrs=new Map(); let pinch=null, moved=false;
+svg.addEventListener('pointerdown',e=>{ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=false;if(ptrs.size===1)svg.classList.add('drag')});
+window.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId))return;
+  const prev=ptrs.get(e.pointerId), r=svg.getBoundingClientRect();
+  if(ptrs.size===1){
+    const dx=e.clientX-prev.x, dy=e.clientY-prev.y;
+    if(Math.abs(dx)+Math.abs(dy)>2) moved=true;
+    vb.x-=dx/r.width*vb.w; vb.y-=dy/r.height*vb.h; apply();
+  }
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){
+    const [a,b]=[...ptrs.values()], d=Math.hypot(a.x-b.x,a.y-b.y);
+    if(pinch){const m={clientX:(a.x+b.x)/2,clientY:(a.y+b.y)/2};const[x,y]=toSvg(m);zoomAt(pinch/d,x,y);moved=true}
+    pinch=d;
+  }
+});
+const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!ptrs.size)svg.classList.remove('drag')};
+window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
+document.getElementById('zin').onclick=()=>zoomAt(1/1.5);
+document.getElementById('zout').onclick=()=>zoomAt(1.5);
+document.getElementById('zreset').onclick=()=>{fit()};
+new ResizeObserver(()=>{const s=vb.w/base;const cx=vb.x+vb.w/2,cy=vb.y+vb.h/2;fit();if(s<0.99){zoomAt(s,cx,cy);vb.x=cx-vb.w/2;vb.y=cy-vb.h/2;apply()}}).observe(svg);
+
+/* ---------- 상태 ---------- */
+const state={cats:new Set(Object.keys(CATS)),stages:new Set([0,1,2,3,4]),q:"",sel:null};
+const tip=document.getElementById('tip');
+function showTip(e,txt){const r=svg.parentElement.getBoundingClientRect();tip.textContent=txt;tip.style.left=(e.clientX-r.left)+'px';tip.style.top=(e.clientY-r.top)+'px';tip.hidden=false}
+const visible=p=>state.cats.has(p.cat)&&state.stages.has(p.stage)&&(!state.q||(p.name+p.region+p.org+(p.ln||"")+(p.st||[]).join("")).toLowerCase().includes(state.q));
+
+function drawMap(){
+  gRoute.innerHTML="";gMk.innerHTML="";gLbl.innerHTML="";gRLbl.innerHTML="";gSLbl.innerHTML="";
+  const seen=new Set();
+  const list=PROJECTS.filter(visible);
+  for(const p of list){
+    const col=css(CATS[p.cat].c);
+    if(p.route){
+      const d='M'+p.route.map(([la,lo])=>proj(lo,la).map(v=>v.toFixed(1)).join(',')).join('L');
+      const sel=state.sel===p.id, w={gtx:4.5,metro:3,ktx:5.5}[p.cat]||3;
+      el('path',{d,class:'route',stroke:col,'stroke-width':sel?w+3:w},gRoute);
+      if(p.cat==='ktx') el('path',{d,class:'route',stroke:css('--panel'),'stroke-width':1.6},gRoute); // 이중선(고속철도)
+      const hit=el('path',{d,class:'route hit','stroke-width':16},gRoute);
+      hit.addEventListener('pointermove',e=>showTip(e,p.name));
+      hit.addEventListener('pointerleave',()=>tip.hidden=true);
+      hit.addEventListener('click',()=>{if(!moved)select(p.id,false)});
+      p.route.forEach(([la,lo],i)=>{
+        const nm=p.st?p.st[i]:'', [x,y]=proj(lo,la);
+        if(nm===null) return; // 역이 아닌 꺾임점
+        const c=el('circle',{cx:x,cy:y,fill:css('--panel'),stroke:col,class:'stn'},gMk);c.dataset.r=2.6;c.style.pointerEvents='none';
+        if(nm && !seen.has(nm)){seen.add(nm);const s=el('text',{x,y,class:'slbl'},gSLbl);s.textContent=nm;s.dataset.kind=p.cat}
+      });
+      const [la,lo]=p.route[p.lp??Math.floor(p.route.length/2)], [x,y]=proj(lo,la);
+      const t=el('text',{x,y,class:'rlbl'+(sel?' sel':''),fill:col},gRLbl); t.dataset.kind=p.cat; t.textContent=p.ln||p.name;
+      if(p.dest){ // 기존 고속선으로 이어지는 운행 종착지
+        const [la2,lo2]=p.route[p.route.length-1], [x2,y2]=proj(lo2,la2);
+        const t2=el('text',{x:x2,y:y2,class:'rlbl',fill:col},gRLbl); t2.dataset.kind=p.cat; t2.textContent='→ '+p.dest.replace(/\(.*?\)/g,'').replace(/\s+/g,' ')+' 방면';
+      }
+    }
+  }
+  for(const p of list){
+    if(p.route)continue;
+    const col=css(CATS[p.cat].c);const[x,y]=proj(p.lon,p.lat);
+    if(state.sel===p.id){const h=el('circle',{cx:x,cy:y,class:'halo'},gMk);h.dataset.r=13}
+    const c=el('circle',{cx:x,cy:y,fill:col,class:'mk'+(state.sel===p.id?' sel':''),tabindex:-1},gMk);
+    c.dataset.r=state.sel===p.id?8:6.5;
+    c.addEventListener('pointermove',e=>showTip(e,p.name));
+    c.addEventListener('pointerleave',()=>tip.hidden=true);
+    c.addEventListener('click',()=>{if(!moved)select(p.id,false)});
+    const t=el('text',{x:x,y:y,dx:0,dy:0,class:'lbl'},gLbl);
+    t.textContent=p.name.replace(/ 공공주택지구| \(.*\)/g,'');
+    t.setAttribute('transform',`translate(0,0)`);
+    t.dataset.x=x;
+  }
+  apply();
+}
+
+function renderFilters(){
+  const fc=document.getElementById('fcat');
+  for(const k in CATS){
+    const b=document.createElement('button');b.className='chip';b.id='cat-'+k;b.setAttribute('aria-pressed','true');
+    b.innerHTML=`<i class="dot" style="background:var(${CATS[k].c})"></i>${CATS[k].n}`;
+    b.onclick=()=>{state.cats.has(k)?state.cats.delete(k):state.cats.add(k);b.setAttribute('aria-pressed',state.cats.has(k));refresh()};
+    fc.appendChild(b);
+  }
+  const fs=document.getElementById('fstage');
+  STAGES.forEach((s,i)=>{
+    const b=document.createElement('button');b.className='chip';b.id='st-'+i;b.setAttribute('aria-pressed','true');b.textContent=s;
+    b.onclick=()=>{state.stages.has(i)?state.stages.delete(i):state.stages.add(i);b.setAttribute('aria-pressed',state.stages.has(i));refresh()};
+    fs.appendChild(b);
+  });
+  const sw=(k,c)=>c.line?`<svg width="22" height="8" aria-hidden="true"><line x1="1" y1="4" x2="21" y2="4" stroke="var(${c.c})" stroke-width="${k==='metro'?3:k==='gtx'?4.5:5.5}" stroke-linecap="round"/>${k==='ktx'?'<line x1="1" y1="4" x2="21" y2="4" stroke="var(--panel)" stroke-width="1.6"/>':''}</svg>`:`<i class="dot" style="background:var(${c.c})"></i>`;
+  document.getElementById('legend').innerHTML=Object.entries(CATS).map(([k,c])=>`<span>${sw(k,c)}${c.n}</span>`).join('');
+  document.getElementById('q').addEventListener('input',e=>{state.q=e.target.value.trim().toLowerCase();refresh()});
+}
+
+function renderStats(){
+  const n=PROJECTS.length, build=PROJECTS.filter(p=>p.stage===3).length, plan=PROJECTS.filter(p=>p.stage<=2).length;
+  document.getElementById('stats').innerHTML=
+    `<div class="stat"><b>${n}</b><span>전체 사업</span></div><div class="stat"><b>${plan}</b><span>계획·승인·보상</span></div><div class="stat"><b>${build}</b><span>공사 중</span></div>`;
+}
+
+function renderList(){
+  const L=document.getElementById('list');const list=PROJECTS.filter(visible);
+  document.getElementById('count').textContent=`표시 중 ${list.length}건`;
+  if(!list.length){L.innerHTML='<div class="empty">조건에 맞는 사업이 없습니다. 필터를 다시 켜 보세요.</div>';return}
+  L.innerHTML="";
+  for(const p of list){
+    const d=document.createElement('div');d.className='item'+(state.sel===p.id?' sel':'');d.tabIndex=0;d.setAttribute('role','button');
+    d.innerHTML=`<i class="dot" style="background:var(${CATS[p.cat].c})"></i><div style="min-width:0"><div class="t">${p.name}</div><div class="m">${p.region.split(' 일원')[0]}</div></div><span class="s">${STAGES[p.stage]}</span>`;
+    d.onclick=()=>select(p.id,true);
+    d.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(p.id,true)}};
+    L.appendChild(d);
+  }
+}
+
+function renderDetail(){
+  const D=document.getElementById('detail');const p=PROJECTS.find(x=>x.id===state.sel);
+  if(!p){D.innerHTML=`<div class="cat" style="color:var(--muted)">사용 방법</div><h2>지도에서 사업을 선택하세요</h2><p class="desc" style="margin-top:8px">점(지구·단지)이나 선(철도 노선)을 누르면 사업 규모, 시행 기관, 추진 경과가 이곳에 표시됩니다. 마우스 휠이나 두 손가락으로 확대할 수 있고, 아래 목록에서 바로 고를 수도 있습니다.</p>`;return}
+  const col=`var(${CATS[p.cat].c})`;
+  D.innerHTML=`
+    <div class="cat" style="color:${col}"><i class="dot" style="background:${col}"></i>${CATS[p.cat].n}</div>
+    <h2>${p.name}<span class="badge">${STAGES[p.stage]}</span></h2>
+    <div class="org">${p.org}</div>
+    <div class="steps">${STAGES.map((s,i)=>`<i class="${i<=p.stage?'on':''}"></i>`).join('')}</div>
+    <div class="steplbl">${STAGES.map((s,i)=>`<span class="${i===p.stage?'on':''}">${s}</span>`).join('')}</div>
+    <dl>${p.ln?`<dt>노선</dt><dd><b style="color:${col}">${p.ln}</b></dd><dt>구간</dt><dd>${p.sec}</dd>${p.dest?`<dt>운행 종착지</dt><dd>${p.dest}</dd>`:''}${p.st?`<dt>주요 기착지</dt><dd><ol class="stops">${p.st.filter(Boolean).map(n=>`<li>${n}</li>`).join('')}</ol></dd>`:''}`:''}<dt>위치</dt><dd>${p.region}</dd><dt>규모</dt><dd>${p.scale}</dd><dt>사업기간</dt><dd>${p.period}</dd></dl>
+    <p class="desc">${p.desc}</p>
+    <div class="h3">추진 경과</div>
+    <ul class="tl">${p.tl.map(([d,t,f])=>`<li class="${f?'future':''}"><time>${d}</time>${t}${f?' <span class="note">(예정)</span>':''}</li>`).join('')}</ul>
+    ${p.news?`<div class="h3">관련 보도</div><ul class="news">${p.news.map(([t,u])=>`<li><a href="${u}" target="_blank" rel="noopener">${t}</a></li>`).join('')}</ul>`:''}
+    <div class="src">${p.chk?`${p.chk} 언론 보도로 진행상태 확인`:'최근 갱신에서 최신 보도를 확인하지 못한 항목입니다'} · 기관: <a href="${p.src}" target="_blank" rel="noopener">${p.src.replace('https://','')}</a></div>`;
+  D.scrollTop=0;
+}
+
+function select(id,fly){
+  state.sel=id;tip.hidden=true;
+  const p=PROJECTS.find(x=>x.id===id);
+  if(fly&&p){const[x,y]=proj(p.lon,p.lat);const w=Math.min(vb.w,base*0.35);const k=w/vb.w;vb={w,h:vb.h*k,x:x-w/2,y:y-vb.h*k/2}}
+  drawMap();renderList();renderDetail();
+  if(window.innerWidth<=900&&!fly) document.getElementById('detail').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function refresh(){if(state.sel&&!visible(PROJECTS.find(p=>p.id===state.sel)))state.sel=null;drawMap();renderList();renderDetail()}
+
+document.getElementById('upd').textContent=UPDATED;document.getElementById('upd').setAttribute('datetime',UPDATED);
+document.getElementById('updnote').textContent=`${UPDATED} 갱신 · 언론 보도 기준`;
+renderFilters();renderStats();fit();refresh();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawMap);
+new MutationObserver(drawMap).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+</script>

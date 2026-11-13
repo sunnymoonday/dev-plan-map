@@ -31,6 +31,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14p
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px}
 h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+.upd{display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;font-size:12px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.upd time{font-family:var(--mono);font-weight:500}
+.upd-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .stats{display:flex;gap:18px;font-variant-numeric:tabular-nums}
 .stat b{display:block;font-size:20px;font-family:var(--mono);font-weight:500}
 .stat span{font-size:11px;color:var(--muted);letter-spacing:.04em}
@@ -119,6 +122,7 @@ dd{margin:0;min-width:0}
     <div>
       <h1>국토 개발계획 지도</h1>
       <p class="sub">정부·공공기관이 발표한 주요 개발계획의 위치와 진행 단계. 지도의 점이나 노선을 누르면 상세 내용이 나옵니다.</p>
+      <p class="upd"><span class="upd-dot" aria-hidden="true"></span>최종 업데이트 <time id="upd"></time> · 하루 한 번 언론 보도를 확인해 갱신합니다</p>
     </div>
     <div class="stats" id="stats"></div>
   </header>
@@ -140,7 +144,7 @@ dd{margin:0;min-width:0}
     </div>
     <aside>
       <div class="detail" id="detail"></div>
-      <div class="listhead"><span id="count"></span><span class="note">2026-11-13 갱신 · 언론 보도 기준</span></div>
+      <div class="listhead"><span id="count"></span><span class="note" id="updnote"></span></div>
       <div class="list" id="list"></div>
     </aside>
   </main>
@@ -163,103 +167,105 @@ const CATS={
 };
 const STAGES=["계획 발표","지구지정·승인","보상·설계","공사 중","준공·운영"];
 
-/* 데이터: 각 항목의 stage는 0~4 (STAGES 인덱스). 새 사업은 이 배열에 추가하면 됩니다. */
+/* 데이터는 src/data.js 에서 빌드 때 들어갑니다 */
+/* 최종 업데이트 날짜: 자동 갱신 작업이 매일 바꿉니다 */
+const UPDATED="2026-11-13";
 const PROJECTS=[
  {id:"wangsuk",name:"남양주 왕숙 공공주택지구",cat:"house",org:"국토교통부 · LH · 경기주택도시공사",region:"경기 남양주시 진접·진건읍, 양정동 일원",lat:37.636,lon:127.185,stage:3,
   scale:"약 1,134만㎡ · 약 6.6만 호",period:"2019 ~ 2028(준공 예정)",
   desc:"3기 신도시 중 최대 규모. 왕숙1·왕숙2 두 지구로 나뉘며 GTX-B 왕숙역 연계가 포함됩니다. 토지보상은 사실상 끝났지만 공사비 상승으로 후속 공사 속도가 더디다는 지적이 있습니다.",
   tl:[["2018.12","3기 신도시 입지 발표"],["2019.10","공공주택지구 지정"],["2024","부지조성공사 착공"],["2026","왕숙2 주택 착공(약 1,100호)"],["2028.05","첫 입주 목표",1],["2028","지구 준공 예정",1]],
-  chk:1,news:[["이투데이 · 3기 신도시, 공급의 시간","https://www.etoday.co.kr/news/view/2565309"],["파이낸셜뉴스 · 분양·입주 일정","https://www.fnnews.com/news/202608181814209113"]],
+  chk:"2026-11-13",news:[["이투데이 · 3기 신도시, 공급의 시간","https://www.etoday.co.kr/news/view/2565309"],["파이낸셜뉴스 · 분양·입주 일정","https://www.fnnews.com/news/202608181814209113"]],
   src:"https://www.lh.or.kr"},
  {id:"gyosan",name:"하남 교산 공공주택지구",cat:"house",org:"국토교통부 · LH · 경기주택도시공사 · 하남도시공사",region:"경기 하남시 천현·교산·춘궁동 일원",lat:37.519,lon:127.232,stage:3,
   scale:"약 631만㎡ · 약 3.3만 호",period:"2019 ~ 2028(준공 예정)",
   desc:"송파·강동과 맞닿은 3기 신도시. 송파-하남 도시철도(3호선 연장) 신설이 광역교통대책에 포함되어 있습니다.",
   tl:[["2018.12","입지 발표"],["2019.07","공공주택지구 지정"],["2024","부지조성공사 착공"],["2026","주택 착공(약 1,100호)"],["2028","지구 준공 예정",1]],
-  chk:1,news:[["이투데이 · 지구별 준공 일정","https://www.etoday.co.kr/news/view/2565309"]],
+  chk:"2026-11-13",news:[["이투데이 · 지구별 준공 일정","https://www.etoday.co.kr/news/view/2565309"]],
   src:"https://www.lh.or.kr"},
  {id:"gyeyang",name:"인천 계양 테크노밸리",cat:"house",org:"국토교통부 · LH · 인천도시공사",region:"인천 계양구 귤현·동양·박촌동 일원",lat:37.553,lon:126.733,stage:3,
   scale:"약 333만㎡ · 약 1.7만 호",period:"2019 ~ 2027",
   desc:"3기 신도시 가운데 처음으로 입주하는 지구. 주거와 함께 도시첨단산업단지(테크노밸리)를 조성합니다. 당초 계획보다는 입주가 늦어졌습니다.",
   tl:[["2018.12","입지 발표"],["2019.10","지구 지정"],["2023","부지조성공사 착공"],["2024","3기 신도시 첫 주택 착공"],["2026","주택 추가 착공(약 2,300호)"],["2026.12","3기 신도시 첫 입주 예정",1]],
-  chk:1,news:[["아주경제 · 12월 인천계양 첫 입주","https://www.ajunews.com/view/20261016155334195"]],
+  chk:"2026-11-13",news:[["아주경제 · 12월 인천계양 첫 입주","https://www.ajunews.com/view/20261016155334195"]],
   src:"https://www.lh.or.kr"},
  {id:"changneung",name:"고양 창릉 공공주택지구",cat:"house",org:"국토교통부 · LH · 고양도시관리공사",region:"경기 고양시 덕양구 원흥·도내·화전동 일원",lat:37.638,lon:126.875,stage:3,
   scale:"약 789만㎡ · 약 3.8만 호",period:"2019 ~ 2029(준공 예정)",
   desc:"서울 은평·마포와 인접한 3기 신도시. 고양은평선 신설과 창릉천 수변공간 조성이 계획되어 있습니다.",
   tl:[["2019.05","입지 발표"],["2020.03","지구 지정"],["2024","부지조성공사 착공"],["2026","주택 착공(약 2,300호)"],["2027.12","첫 입주 목표",1],["2029","지구 준공 예정",1]],
-  chk:1,news:[["아주경제 · 내년 창릉·대장 입주","https://www.ajunews.com/view/20261016155334195"],["파이낸셜뉴스 · 지구별 첫 입주","https://www.fnnews.com/news/202608181814209113"]],
+  chk:"2026-11-13",news:[["아주경제 · 내년 창릉·대장 입주","https://www.ajunews.com/view/20261016155334195"],["파이낸셜뉴스 · 지구별 첫 입주","https://www.fnnews.com/news/202608181814209113"]],
   src:"https://www.lh.or.kr"},
  {id:"daejang",name:"부천 대장 공공주택지구",cat:"house",org:"국토교통부 · LH · 부천도시공사",region:"경기 부천시 대장·오정·원종동 일원",lat:37.531,lon:126.787,stage:3,
   scale:"약 343만㎡ · 약 1.9만 호",period:"2019 ~ 2029(준공 예정)",
   desc:"김포공항 인근 3기 신도시. 대장~홍대선 광역철도와 연계되며 기업 유치용 자족용지 비율이 높습니다.",
   tl:[["2019.05","입지 발표"],["2020.03","지구 지정"],["2024","부지조성공사 착공"],["2026","주택 착공(약 600호)"],["2027.11","첫 입주 목표",1],["2029","지구 준공 예정",1]],
-  chk:1,news:[["파이낸셜뉴스 · 지구별 첫 입주","https://www.fnnews.com/news/202608181814209113"]],
+  chk:"2026-11-13",news:[["파이낸셜뉴스 · 지구별 첫 입주","https://www.fnnews.com/news/202608181814209113"]],
   src:"https://www.lh.or.kr"},
  {id:"gwangmyeong",name:"광명시흥 공공주택지구",cat:"house",org:"국토교통부 · LH",region:"경기 광명시 광명·옥길동, 시흥시 과림·무지내동 일원",lat:37.433,lon:126.838,stage:2,
   scale:"약 1,271만㎡ · 약 6.7만 호(공공 3.7만)",period:"2021 ~ 2031 이후",
   desc:"3기 신도시 중 가장 큰 지구. 보금자리지구 해제 이후 장기간 방치됐던 지역을 재지정했습니다. 2026년부터 토지보상이 순차 진행됩니다.",
   tl:[["2021.02","입지 발표"],["2021.08","지구 지정"],["2024.12","지구계획 승인"],["2026","토지보상 착수"],["2027","택지 착공 목표",1],["2029","첫 분양 목표",1],["2031","첫 입주 목표",1]],
-  chk:1,news:[["머니투데이 · 광명시흥 지구계획 승인","https://news.mt.co.kr/mtview.php?no=2024123009105574309"],["세계일보 · 3기 신도시 순차 토지보상","https://www.segye.com/newsView/20260726508204"]],
+  chk:"2026-11-13",news:[["머니투데이 · 광명시흥 지구계획 승인","https://news.mt.co.kr/mtview.php?no=2024123009105574309"],["세계일보 · 3기 신도시 순차 토지보상","https://www.segye.com/newsView/20260726508204"]],
   src:"https://www.lh.or.kr"},
  {id:"uiwang",name:"의왕군포안산 공공주택지구",cat:"house",org:"국토교통부 · LH",region:"경기 의왕시 초평동, 군포시 도마교동, 안산시 건건동 일원",lat:37.312,lon:126.925,stage:2,
   scale:"약 586만㎡ · 약 4.15만 호",period:"2022 ~ 2030년대",
   desc:"2022년 신규택지 발표로 추진되는 수도권 서남부 신도시급 택지. 지구계획 승인을 마치고 보상 준비 단계에 들어섰습니다. 자원회수시설 입지는 재검토 중입니다.",
   tl:[["2022.11","신규택지 후보지 발표"],["2024","공공주택지구 지정"],["2025.12","지구계획 승인"],["2026.12","보상계획 공고 목표",1],["2027 하반기","보상 협의 착수 예정",1]],
-  chk:1,news:[["헤럴드경제 · 수도권 7곳 지구지정·지구계획 승인","https://www.heraldk.com/article/2025123013000062492"],["서울신문 · 보상 추진상황 점검","https://m.go.seoul.co.kr/news/2026/07/28/20260728500078"]],
+  chk:"2026-11-13",news:[["헤럴드경제 · 수도권 7곳 지구지정·지구계획 승인","https://www.heraldk.com/article/2025123013000062492"],["서울신문 · 보상 추진상황 점검","https://m.go.seoul.co.kr/news/2026/07/28/20260728500078"]],
   src:"https://www.molit.go.kr"},
  {id:"jinan",name:"화성 진안 공공주택지구",cat:"house",org:"국토교통부 · LH",region:"경기 화성시 진안·반정·반월동 일원",lat:37.218,lon:127.039,stage:1,
   scale:"약 452만㎡ · 약 3.4만 호",period:"2022 ~ 2030년대",
   desc:"동탄·병점과 맞닿은 신규택지. 반도체 벨트 배후 주거 수요를 흡수하는 역할입니다. 지구계획 승인 여부는 이번 갱신에서 확인되지 않았습니다.",
   tl:[["2022.11","신규택지 후보지 발표"],["2024","공공주택지구 지정"],["2026~","3기 신도시 후속지구 순차 보상 대상",1]],
-  chk:1,news:[["세계일보 · 3기 신도시 순차 토지보상","https://www.segye.com/newsView/20260726508204"]],
+  chk:"2026-11-13",news:[["세계일보 · 3기 신도시 순차 토지보상","https://www.segye.com/newsView/20260726508204"]],
   src:"https://www.molit.go.kr"},
  {id:"seoripul",name:"서울 서리풀 공공주택지구",cat:"house",org:"국토교통부 · LH · 서울주택도시개발공사(SH)",region:"서울 서초구 원지·우면·신원·염곡동 일원",lat:37.462,lon:127.045,stage:1,
   scale:"서리풀1·2지구 합계 약 2만 호",period:"2024 ~ 2035",
   desc:"서울 그린벨트를 12년 만에 해제해 조성하는 주택지구. 2026년 6월 우면동 일대 서리풀2지구(약 19.3만㎡, 2,000호)가 추가 지정됐습니다. 일부 주민과 종교단체가 반대하고 있습니다.",
   tl:[["2024.11","개발제한구역 해제 후보지 발표·주민공람"],["2026.03","중앙도시계획위원회 심의 통과"],["2026.06","서리풀2지구 지정 고시"],["2027","지구계획 승인 예정",1],["2028.12","착공 목표",1]],
-  chk:1,news:[["디지털데일리 · 서리풀2지구 추가 지정","https://www.ddaily.co.kr/page/view/2026061110413509472"],["헤럴드경제 · 2028년 12월 착공","https://www.heraldk.com/article/2026061013000073604"]],
+  chk:"2026-11-13",news:[["디지털데일리 · 서리풀2지구 추가 지정","https://www.ddaily.co.kr/page/view/2026061110413509472"],["헤럴드경제 · 2028년 12월 착공","https://www.heraldk.com/article/2026061013000073604"]],
   src:"https://www.molit.go.kr"},
  {id:"daegok",name:"고양 대곡역세권 공공주택지구",cat:"house",org:"국토교통부 · LH",region:"경기 고양시 덕양구 대장·내곡동 일원",lat:37.633,lon:126.811,stage:1,
   scale:"약 199만㎡ · 약 0.9만 호",period:"2024 ~ 2030년대",
   desc:"GTX-A, 3호선, 경의중앙선, 서해선이 만나는 대곡역 주변을 역세권 복합지구로 개발합니다.",
   tl:[["2024.11","신규택지 후보지 발표"],["2025","공공주택지구 지정 절차"],["2026~","지구계획 수립",1]],
-  chk:0,src:"https://www.molit.go.kr"},
+  chk:"",src:"https://www.molit.go.kr"},
  {id:"geomdan",name:"인천 검단신도시",cat:"house",org:"LH · 인천도시공사",region:"인천 서구 원당·당하·마전·불로동 일원",lat:37.598,lon:126.664,stage:4,
   scale:"약 1,118만㎡ · 약 7.5만 호",period:"2009 ~ 2026",
   desc:"2기 신도시 중 수도권 서북부 마지막 신도시. 2021년부터 입주가 시작됐고 인천1호선 연장선이 2025년 개통했습니다.",
   tl:[["2009","택지개발예정지구 지정"],["2016","부지조성공사 착공"],["2021","첫 입주"],["2025","인천1호선 검단연장선 개통"],["2026","택지조성 준공 목표",1]],
-  chk:0,src:"https://www.lh.or.kr"},
+  chk:"",src:"https://www.lh.or.kr"},
  {id:"godeok",name:"평택 고덕국제화계획지구",cat:"house",org:"LH · 경기주택도시공사 · 평택시",region:"경기 평택시 고덕면 일원",lat:37.045,lon:127.047,stage:3,
   scale:"약 1,342만㎡ · 약 5.7만 호",period:"2008 ~ 2028",
   desc:"삼성전자 평택캠퍼스 배후도시. 1단계는 입주가 끝났고 2·3단계 조성이 진행 중입니다.",
   tl:[["2008","지구 지정"],["2015","1단계 공사 착공"],["2019","첫 입주"],["2028","전체 준공 목표",1]],
-  chk:0,src:"https://www.lh.or.kr"},
+  chk:"",src:"https://www.lh.or.kr"},
  {id:"ecodelta",name:"부산 에코델타시티",cat:"house",org:"한국수자원공사 · 부산도시공사 · 부산시",region:"부산 강서구 명지·강동·대저동 일원",lat:35.128,lon:128.912,stage:3,
   scale:"약 1,188만㎡ · 약 3만 호",period:"2012 ~ 2028",
   desc:"낙동강 하구 친수구역에 조성하는 수변 스마트시티. 국가 시범도시로 지정되어 스마트빌리지가 운영 중입니다.",
   tl:[["2012","친수구역 지정"],["2018","국가 스마트시티 시범도시 지정"],["2023","첫 입주"],["2028","전체 준공 목표",1]],
-  chk:0,src:"https://www.kwater.or.kr"},
+  chk:"",src:"https://www.kwater.or.kr"},
 
  {id:"gtxa",name:"GTX-A (운정 ~ 동탄)",cat:"gtx",ln:"GTX-A",st:["운정중앙", "킨텍스", "대곡", "연신내", "서울역", "삼성", "수서", "성남", "구성", "동탄"],sec:"운정중앙 ~ 서울역 ~ 삼성 ~ 수서 ~ 동탄",lp:1,org:"국토교통부 · 국가철도공단 · 에스지레일",region:"경기 파주 운정 ~ 서울 ~ 경기 화성 동탄",lat:37.555,lon:126.972,stage:3,
   route:[[37.716,126.746],[37.669,126.748],[37.632,126.811],[37.619,126.921],[37.555,126.972],[37.509,127.063],[37.487,127.101],[37.395,127.121],[37.299,127.107],[37.200,127.097]],
   scale:"총연장 약 82.1km · 정거장 11개소",period:"2018 ~ 2028 이후",
   desc:"수도권 광역급행철도 첫 노선. 수서~동탄과 운정~서울역은 운행 중입니다. 서울역~수서 연결은 2026년 6월 목표였으나 5월 삼성역 구간 시공 오류(철근 누락)가 드러나 연기됐습니다.",
   tl:[["2018.12","착공"],["2024.03","수서~동탄 개통"],["2024.12","운정~서울역 개통"],["2026.05","삼성역 구간 철근 누락 확인, 연결 개통 연기"],["2026 말~","서울역~수서 연결(삼성역 무정차) 전망",1],["2028","삼성역 완전 개통 목표(지연 가능)",1]],
-  chk:1,news:[["위키트리 · 서울역~수서 개통 지연","https://www.wikitree.co.kr/articles/1128480"],["철도경제신문 · 서울~수서 연결 일정","https://www.redaily.co.kr/news/articleView.html?idxno=15874"]],
+  chk:"2026-11-13",news:[["위키트리 · 서울역~수서 개통 지연","https://www.wikitree.co.kr/articles/1128480"],["철도경제신문 · 서울~수서 연결 일정","https://www.redaily.co.kr/news/articleView.html?idxno=15874"]],
   src:"https://www.molit.go.kr"},
  {id:"gtxb",name:"GTX-B (인천대입구 ~ 마석)",cat:"gtx",ln:"GTX-B",st:["인천대입구", "인천시청", "부평", "여의도", "서울역", "청량리", "망우", "별내", "평내호평", "마석"],sec:"인천대입구 ~ 부평 ~ 여의도 ~ 서울역 ~ 청량리 ~ 마석",lp:9,org:"국토교통부 · 국가철도공단 · 대우건설 컨소시엄",region:"인천 송도 ~ 서울 ~ 경기 남양주 마석",lat:37.580,lon:127.047,stage:3,
   route:[[37.386,126.640],[37.457,126.702],[37.490,126.724],[37.520,126.924],[37.555,126.972],[37.580,127.047],[37.599,127.093],[37.642,127.127],[37.653,127.243],[37.652,127.312]],
   scale:"총연장 약 82.8km · 정거장 14개소",period:"2024 ~ 2030(목표)",
   desc:"인천 송도에서 여의도·서울역·청량리를 거쳐 남양주 마석까지 잇는 노선. 민자 구간은 2026년 초 공정률 10% 안팎으로 공사 초기 단계이며, 2031년 전후 개통이 현실적이라는 전망도 있습니다.",
   tl:[["2019.08","예비타당성조사 통과"],["2024.03","착공식"],["2026","민자 구간 공정률 약 10%"],["2030","개통 목표(2031 전후 전망)",1]],
-  chk:1,news:[["IB토마토 · GTX-B 본궤도","https://newstomato.com/ReadNews.aspx?no=1294859"]],
+  chk:"2026-11-13",news:[["IB토마토 · GTX-B 본궤도","https://newstomato.com/ReadNews.aspx?no=1294859"]],
   src:"https://www.molit.go.kr"},
  {id:"gtxc",name:"GTX-C (덕정 ~ 수원)",cat:"gtx",ln:"GTX-C",st:["덕정", "의정부", "창동", "청량리", "삼성", "양재", "과천", "금정", "의왕", "수원"],sec:"덕정 ~ 의정부 ~ 창동 ~ 청량리 ~ 삼성 ~ 양재 ~ 과천 ~ 수원",lp:0,org:"국토교통부 · 현대건설 컨소시엄",region:"경기 양주 덕정 ~ 서울 ~ 경기 수원",lat:37.653,lon:127.047,stage:3,
   route:[[37.843,127.062],[37.738,127.046],[37.653,127.047],[37.580,127.047],[37.509,127.063],[37.484,127.034],[37.433,126.996],[37.372,126.943],[37.312,126.925],[37.266,127.000]],
   scale:"총연장 약 86.5km · 정거장 10개소",period:"2024 ~ 2031(목표)",
   desc:"양주 덕정에서 창동·청량리·삼성·양재를 지나 수원까지 남북을 잇는 노선. 공사비 분쟁으로 2년 가까이 멈췄다가 중재 판정과 협약 변경을 거쳐 2026년 하반기 본공사에 들어갔습니다. 개통 목표는 당초 2028년에서 2031년으로 늦춰졌습니다.",
   tl:[["2024.01","착공식"],["2026.04","대한상사중재원 공사비 증액 중재 판정"],["2026.08","민간투자사업심의위 실시협약 변경 통과"],["2026 하반기","실시계획 2차 변경 승인·본공사 착수(공사기간 60개월)"],["2031","개통 목표",1]],
-  chk:1,news:[["시사저널e · GTX-C 드디어 착공","https://www.sisajournal-e.com/news/articleView.html?idxno=423713"],["아시아투데이 · 민투심 통과","https://www.asiatoday.co.kr/kn/view.php?key=20260825010008469"]],
+  chk:"2026-11-13",news:[["시사저널e · GTX-C 드디어 착공","https://www.sisajournal-e.com/news/articleView.html?idxno=423713"],["아시아투데이 · 민투심 통과","https://www.asiatoday.co.kr/kn/view.php?key=20260825010008469"]],
   src:"https://www.molit.go.kr"},
 
  {id:"sinansan",name:"신안산선 복선전철",cat:"metro",ln:"신안산선",st:["한양대", "중앙", "시흥시청", "광명", "구로디지털단지", "영등포", "여의도"],sec:"한양대(ERICA) · 시흥시청 ~ 광명 ~ 대림 ~ 여의도",lp:0,org:"국토교통부 · 넥스트레인(민자)",region:"경기 안산·시흥·광명 ~ 서울 영등포",lat:37.416,lon:126.885,stage:3,
@@ -267,149 +273,150 @@ const PROJECTS=[
   scale:"총연장 약 44.7km",period:"2019 ~ 2028~2029(전망)",
   desc:"안산·시흥에서 광명을 거쳐 여의도까지 가는 광역전철. 2025년 4월 광명 구간 지하터널 붕괴 사고 이후 공사기간을 80개월에서 104개월로 늘리는 방안이 검토되면서 개통이 2028~2029년으로 밀릴 전망입니다.",
   tl:[["2019.09","착공"],["2024.08","개통 시기 2025.04 → 2026.12 변경 승인"],["2025.04","광명 구간 지하터널 붕괴 사고"],["2025.12","공사기간 104개월로 연장 검토"],["2028~2029","개통 전망",1]],
-  chk:1,news:[["다음뉴스 · 신안산선 2년 더 늦어진다","https://v.daum.net/v/20251202120005179"],["정책브리핑 · 국토부 해명","https://www.korea.kr/briefing/actuallyView.do?newsId=148942307"]],
+  chk:"2026-11-13",news:[["다음뉴스 · 신안산선 2년 더 늦어진다","https://v.daum.net/v/20251202120005179"],["정책브리핑 · 국토부 해명","https://www.korea.kr/briefing/actuallyView.do?newsId=148942307"]],
   src:"https://www.molit.go.kr"},
  {id:"wolpan",name:"월곶~판교 복선전철",cat:"metro",ln:"월곶판교선",st:["월곶", "시흥시청", "광명", "안양", "인덕원", "서판교", "판교"],sec:"월곶 ~ 시흥시청 ~ 광명 ~ 안양 ~ 인덕원 ~ 판교",lp:0,org:"국토교통부 · 국가철도공단",region:"경기 시흥 월곶 ~ 성남 판교",lat:37.401,lon:126.95,stage:3,
   route:[[37.391,126.742],[37.381,126.805],[37.416,126.885],[37.401,126.922],[37.401,126.976],[37.380,127.080],[37.395,127.111]],
   scale:"총연장 약 34.2km · 정거장 11개소",period:"2024 ~ 2029",
   desc:"경기 서남부를 동서로 가로지르는 광역전철. 당초 2026년 개통 목표에서 여러 차례 늦춰졌고, 현재 목표는 2029년 12월입니다.",
   tl:[["2018","기본계획 고시(당초 2026년 개통 목표)"],["2024.04","실시계획 승인·착공"],["2028.11","종점부 공구 완공 목표",1],["2029.12","개통 목표",1]],
-  chk:1,news:[["MTN · 실시계획 승인","https://news.mtn.co.kr/news-detail/2024040111304737315"]],
+  chk:"2026-11-13",news:[["MTN · 실시계획 승인","https://news.mtn.co.kr/news-detail/2024040111304737315"]],
   src:"https://www.kr.or.kr"},
  {id:"wirye",name:"위례신사선 도시철도",cat:"metro",ln:"위례신사선",st:["위례", "가락시장", "삼성", "청담", "신사"],sec:"위례 ~ 가락시장 ~ 삼성 ~ 청담 ~ 신사",lp:0,org:"서울시 · 국토교통부",region:"서울 송파·강남, 경기 성남(위례)",lat:37.505,lon:127.08,stage:1,
   route:[[37.478,127.142],[37.493,127.118],[37.509,127.063],[37.519,127.053],[37.516,127.020]],
   scale:"총연장 약 14.8km · 총사업비 약 1.7조 원",period:"2008 ~ 미정",
   desc:"위례신도시 광역교통대책으로 2008년 계획됐지만 민자사업이 무산된 노선. 2026년 2월 재정사업으로 전환됐고, 예비타당성조사 통과 후 설계 단계로 넘어갑니다. 사업비 증액 가능성이 남은 과제입니다.",
   tl:[["2008","위례신도시 광역교통대책 반영"],["2024.06","민자사업자 협상 결렬"],["2026.02","도시철도망 계획 변경 승인(재정사업 전환)"],["2026","예비타당성조사 통과(보도)"],["미정","기본·실시설계 및 착공",1]],
-  chk:1,news:[["아시아경제 · 재정사업 전환 최종 승인","https://view.asiae.co.kr/article/2026021308555778508"],["뉴데일리 · 남은 과제 3가지","https://biz.newdaily.co.kr/site/data/html/2026/02/23/2026022300102.html"]],
+  chk:"2026-11-13",news:[["아시아경제 · 재정사업 전환 최종 승인","https://view.asiae.co.kr/article/2026021308555778508"],["뉴데일리 · 남은 과제 3가지","https://biz.newdaily.co.kr/site/data/html/2026/02/23/2026022300102.html"]],
   src:"https://www.seoul.go.kr"},
  {id:"dongbuk",name:"동북선 경전철",cat:"metro",ln:"동북선",st:["왕십리", "고려대", "미아사거리", "하계", "은행사거리", "상계"],sec:"왕십리 ~ 고려대 ~ 미아사거리 ~ 하계 ~ 상계",lp:5,org:"서울시 · 동북선도시철도(민자)",region:"서울 성동·성북·강북·노원",lat:37.61,lon:127.05,stage:3,
   route:[[37.561,127.037],[37.590,127.036],[37.613,127.030],[37.636,127.068],[37.652,127.075],[37.661,127.073]],
   scale:"총연장 약 13.4km · 정거장 16개소",period:"2020 ~ 2028",
   desc:"서울 동북권 교통 소외지역을 잇는 경전철. 상계~왕십리를 환승 없이 약 25분에 연결합니다. 안전기준 강화와 자재 수급 차질로 개통이 2026년 7월에서 2028년 8월로 늦춰지는 중입니다.",
   tl:[["2020.07","착공"],["2025","개통 목표 2027.11로 연기"],["2026","공기 연장 요청, 2028.08로 재조정 추진"],["2028.08","개통 목표",1]],
-  chk:1,news:[["데일리팝 · 2028년 8월로 연기","http://www.dailypop.kr/news/articleView.html?idxno=104123"]],
+  chk:"2026-11-13",news:[["데일리팝 · 2028년 8월로 연기","http://www.dailypop.kr/news/articleView.html?idxno=104123"]],
   src:"https://www.seoul.go.kr"},
  {id:"cheongna",name:"서울도시철도 7호선 청라국제도시 연장",cat:"metro",ln:"7호선 청라연장",st:["석남", null, null, null, "청라국제도시"],sec:"석남 ~ 인천 서구 ~ 청라국제도시",lp:4,org:"인천시 도시철도건설본부",region:"인천 서구 석남동 ~ 청라국제도시",lat:37.53,lon:126.65,stage:3,
   route:[[37.506,126.677],[37.520,126.666],[37.535,126.645],[37.545,126.628],[37.556,126.624]],
   scale:"총연장 약 10.7km · 정거장 6개소",period:"2021 ~ 2033",
   desc:"7호선을 석남에서 청라국제도시까지 연장하는 사업. 공정률이 58%에 머물러 2027년 개통 계획이 무산됐고, 인천시가 시공사에 공정 정상화를 요구하고 있습니다.",
   tl:[["2021","착공(당초 2027년 개통 목표)"],["2026.09","2027년 개통 불가, 2029년 말 전망 보도"],["2026.11","인천시, 시공사 본사에 공정 정상화 촉구"],["2029.11","1단계 개통 목표",1],["2033.01","2단계 개통 목표",1]],
-  chk:1,news:[["경기일보 · 2029년 말 개통 전망","https://www.kyeonggi.com/article/20260920580271"],["글로벌이코노믹 · 공정 정상화 촉구","https://g-enews.com/article/General-News/2026/11/2026111211365639119ae5042aca_1"]],
+  chk:"2026-11-13",news:[["경기일보 · 2029년 말 개통 전망","https://www.kyeonggi.com/article/20260920580271"],["글로벌이코노믹 · 공정 정상화 촉구","https://g-enews.com/article/General-News/2026/11/2026111211365639119ae5042aca_1"]],
   src:"https://www.incheon.go.kr/iurail/IU010301"},
 
- {id:"incheonktx",name:"인천발 KTX 직결사업",cat:"ktx",ln:"인천발 KTX",st:["송도", "초지", "어천", null],sec:"송도 ~ 초지 ~ 어천 ~ 경부고속선 연결",lp:1,org:"국토교통부 · 국가철도공단 · 인천시",region:"인천 송도 ~ 경기 안산 초지 ~ 화성 어천",lat:37.32,lon:126.807,stage:3,
+ {id:"incheonktx",name:"인천발 KTX 직결사업",cat:"ktx",ln:"인천발 KTX",st:["송도","초지","어천","경부고속선 합류"],dest:"부산(하루 12회) · 광주송정·목포(하루 6회)",sec:"송도 ~ 초지 ~ 어천 ~ 경부고속선 연결",lp:1,org:"국토교통부 · 국가철도공단 · 인천시",region:"인천 송도 ~ 경기 안산 초지 ~ 화성 어천",lat:37.32,lon:126.807,stage:3,
   route:[[37.428,126.657],[37.320,126.807],[37.200,126.920],[37.170,126.985]],
   scale:"연결선 3.19km 신설 + 역 3곳 개량",period:"2021 ~ 2026",
-  desc:"수인선과 경부고속선을 잇는 연결선을 새로 놓아 인천 송도에서 KTX를 탈 수 있게 하는 사업. 세 차례 연기 끝에 2026년 12월 개통을 목표로 하고, 초기에는 편도 12회 운행합니다.",
-  tl:[["2021","착공"],["2025.07","공사 이행률 57%, 개통 2026.12로 조정"],["2025.12","공정률 약 64%"],["2026.12","개통 목표(편도 12회)",1]],
-  chk:1,news:[["경향신문 · 2026년 12월 개통","https://www.khan.co.kr/article/202507291111001"],["철도경제신문 · 인천·수원발 KTX","https://www.redaily.co.kr/news/articleView.html?idxno=15525"]],
+  desc:"수인선과 경부고속선을 잇는 연결선을 새로 놓아 인천 송도에서 KTX를 탈 수 있게 하는 사업. 세 차례 연기 끝에 2026년 12월 개통을 목표로 하고, 개통하면 경부고속선을 타고 부산까지(하루 12회), 호남고속선을 타고 광주송정·목포까지(하루 6회) 운행할 계획입니다.",
+  tl:[["2021","착공"],["2025.07","공사 이행률 57%, 개통 2026.12로 조정"],["2025.12","공정률 약 64%"],["2026.07","공정률 72%, 송도역 주차장 178면 계획"],["2026.12","개통 목표(부산 방면 12회, 목포 방면 6회)",1]],
+  chk:"2026-11-13",news:[["경기일보 · 공정률 72%, 12월 개통","https://www.kyeonggi.com/article/20260708580263"],["서울신문 · 부산까지 2시간 30분","https://m.go.seoul.co.kr/news/2024/02/02/20240202009005"],["경향신문 · 2026년 12월 개통","https://www.khan.co.kr/article/202507291111001"],["철도경제신문 · 인천·수원발 KTX","https://www.redaily.co.kr/news/articleView.html?idxno=15525"]],
   src:"https://www.kr.or.kr"},
  {id:"suwonktx",name:"수원발 KTX 직결사업",cat:"ktx",ln:"수원발 KTX",st:["수원", null, "서정리", "평택지제"],sec:"수원 ~ 서정리 ~ 지제(경부고속선 연결)",lp:0,org:"국토교통부 · 국가철도공단",region:"경기 수원 ~ 평택",lat:37.14,lon:127.04,stage:3,
   route:[[37.266,127.000],[37.150,127.040],[37.060,127.060],[37.018,127.070]],
   scale:"연결선 약 9.5km",period:"2021 ~ 2026",
   desc:"경부선과 수서평택고속선을 이어 수원에서 KTX가 출발하도록 하는 사업. 2025년 말 공정률은 약 70%이며 인천발 KTX와 함께 2026년 말 개통을 목표로 합니다.",
   tl:[["2021","착공"],["2025.12","공정률 약 70%"],["2026 말","개통 목표",1]],
-  chk:1,news:[["철도경제신문 · 인천·수원발 KTX 올해 개통하나","https://www.redaily.co.kr/news/articleView.html?idxno=15525"]],
+  chk:"2026-11-13",news:[["철도경제신문 · 인천·수원발 KTX 올해 개통하나","https://www.redaily.co.kr/news/articleView.html?idxno=15525"]],
   src:"https://www.kr.or.kr"},
  {id:"pyeongosong",name:"평택~오송 고속철도 2복선화",cat:"ktx",ln:"평택~오송 2복선",st:["평택지제", "천안아산", "오송"],sec:"평택지제 ~ 천안아산 ~ 오송(지하 복선 추가)",lp:1,org:"국토교통부 · 국가철도공단",region:"경기 평택 ~ 충남 천안 ~ 충북 청주 오송",lat:36.794,lon:127.104,stage:3,
   route:[[37.018,127.070],[36.794,127.104],[36.620,127.327]],
   scale:"총연장 약 46km",period:"2022 ~ 2028",
   desc:"KTX·SRT가 모두 지나는 병목 구간에 고속선 2복선을 지하로 추가하는 사업. 주말 선로 혼잡도가 94%에 이르며, 완공되어야 인천·수원발 KTX 증편이 가능합니다.",
   tl:[["2022","착공"],["2026.05","주말 혼잡도 94.2% 지적, 2028 말 완료 계획 재확인"],["2028 말","완공 목표",1]],
-  chk:1,news:[["전기신문 · 국가철도공단 2026년 계획","https://www.electimes.com/news/articleView.html?idxno=364053"]],
+  chk:"2026-11-13",news:[["전기신문 · 국가철도공단 2026년 계획","https://www.electimes.com/news/articleView.html?idxno=364053"]],
   src:"https://www.kr.or.kr"},
  {id:"nambu",name:"남부내륙철도 (김천~거제)",cat:"ktx",ln:"남부내륙철도",st:["김천", "성주", "합천", "진주", "고성", "통영", "거제"],sec:"김천 ~ 성주 ~ 합천 ~ 진주 ~ 고성 ~ 통영 ~ 거제",lp:3,org:"국토교통부 · 국가철도공단",region:"경북 김천 ~ 경남 거제",lat:35.5,lon:128.2,stage:3,
   route:[[36.120,128.180],[35.920,128.280],[35.570,128.170],[35.180,128.120],[34.970,128.320],[34.860,128.430],[34.880,128.620]],
   scale:"총연장 약 174.6km · 총사업비 약 7.1조 원",period:"2026 ~ 2031",
   desc:"경부고속선 김천에서 갈라져 거제까지 가는 고속화철도. 서울~거제를 2시간대로 잇습니다. 통영~거제 견내량 해역 아래에 국내 첫 철도 해저터널을 놓습니다.",
   tl:[["2019.01","예비타당성조사 면제"],["2026.02.06","착공식(14개 공구 중 10개 계약)"],["2026.03","나머지 공구 입찰 착수"],["2031","개통 목표",1]],
-  chk:1,news:[["경향신문 · 남부내륙철도 첫 삽","https://www.khan.co.kr/article/202602061506001"],["뉴시스 · 착공식","https://www.newsis.com/view/NISX20260206_0003505181"]],
+  chk:"2026-11-13",news:[["경향신문 · 남부내륙철도 첫 삽","https://www.khan.co.kr/article/202602061506001"],["뉴시스 · 착공식","https://www.newsis.com/view/NISX20260206_0003505181"]],
   src:"https://www.kr.or.kr"},
  {id:"honam2",name:"호남고속철도 2단계 (광주송정~목포)",cat:"ktx",ln:"호남고속 2단계",st:["광주송정", "고막원", "무안국제공항", "목포"],sec:"광주송정 ~ 고막원 ~ 무안국제공항 ~ 목포(임성리)",lp:2,org:"국토교통부 · 국가철도공단",region:"광주 광산구 ~ 전남 나주·무안 ~ 목포",lat:34.99,lon:126.6,stage:3,
   route:[[35.137,126.790],[35.000,126.620],[34.992,126.383],[34.770,126.430]],
   scale:"총연장 약 77km",period:"2020 ~ 2027 이후",
   desc:"호남고속선을 무안국제공항을 거쳐 목포까지 잇는 2단계 사업. 예산 부족으로 2026년 개통이 어려워졌고, 광주 민간공항의 무안 이전과 연계하려던 계획도 재조정되고 있습니다.",
   tl:[["2017","무안공항 경유 노선 확정"],["2020","착공"],["2026","예산이 건의액의 절반 수준만 반영"],["2027~","개통 목표(지연 가능)",1]],
-  chk:1,news:[["kbc · 광주공항 무안 이전 일정","https://news.ikbc.co.kr/article/view/kbc202608060026"],["무안신문 · 2026년 개통 빨간불","http://www.muannews.com/news/articleView.html?idxno=506245"]],
+  chk:"2026-11-13",news:[["kbc · 광주공항 무안 이전 일정","https://news.ikbc.co.kr/article/view/kbc202608060026"],["무안신문 · 2026년 개통 빨간불","http://www.muannews.com/news/articleView.html?idxno=506245"]],
   src:"https://www.kr.or.kr"},
  {id:"dongseo",name:"춘천~속초 동서고속화철도",cat:"ktx",ln:"동서고속화철도",st:["춘천", "화천", "양구", "인제", "백담", "속초"],sec:"춘천 ~ 화천 ~ 양구 ~ 인제 ~ 백담 ~ 속초",lp:3,org:"국토교통부 · 국가철도공단 · 강원도",region:"강원 춘천 ~ 속초",lat:38.07,lon:128.17,stage:3,
   route:[[37.885,127.717],[38.106,127.708],[38.110,127.990],[38.070,128.170],[38.160,128.370],[38.200,128.590]],
   scale:"총연장 약 93.7km · 총사업비 약 3조 원",period:"2021 ~ 2029",
   desc:"수도권에서 속초까지 철도로 잇는 강원 횡단 노선. 일반 구간 착공과 보상이 늦어져 개통이 2027년에서 2029년 상반기로 조정됐습니다.",
   tl:[["2021.12","착공"],["2025.12","전체 공정률 약 11%"],["2026.03","최대 난구간 공정률 30% 돌파, 사업기간 2029년으로 변경 추진"],["2029 상반기","개통 목표",1]],
-  chk:1,news:[["다음뉴스 · 개통은 29년","https://v.daum.net/v/20260319001045760"],["LG헬로비전 · 개통 2029년 전망","http://news.lghellovision.net/news/articleView.html?idxno=537338"]],
+  chk:"2026-11-13",news:[["다음뉴스 · 개통은 29년","https://v.daum.net/v/20260319001045760"],["LG헬로비전 · 개통 2029년 전망","http://news.lghellovision.net/news/articleView.html?idxno=537338"]],
   src:"https://www.kr.or.kr"},
 
  {id:"gadeok",name:"가덕도신공항",cat:"air",org:"국토교통부 · 가덕도신공항건설공단 · 대우건설 컨소시엄",region:"부산 강서구 가덕도 일원",lat:35.020,lon:128.822,stage:2,
   scale:"부지 약 667만㎡ · 활주로 1본",period:"2021 ~ 2035(개항 목표)",
   desc:"부울경 관문공항으로 추진되는 해상·육상 매립 공항. 입찰이 두 차례 유찰된 뒤 대우건설 컨소시엄(19개사)과 수의계약으로 전환했고, 2026년 11월 실시설계에 들어갔습니다. 공사비 급등 문제는 특별법 개정으로 대응할 계획입니다.",
   tl:[["2021.03","가덕도신공항 건설 특별법 제정"],["2023.12","기본계획 고시"],["2024.10","가덕도신공항건설공단 출범"],["2026","부지조성공사 대우건설 컨소시엄 수의계약"],["2026.11.09","부지조성 실시설계 착수(180일)"],["2027 상반기","본공사 착공 목표",1],["2035","개항 목표",1]],
-  chk:1,news:[["인사이트 · 실시설계 착수, 2035 개항","https://www.insight.co.kr/news/581373"],["FETV · 대우건설 컨소 실시설계","https://www.fetv.co.kr/news/articleView.html?idxno=313457"]],
+  chk:"2026-11-13",news:[["인사이트 · 실시설계 착수, 2035 개항","https://www.insight.co.kr/news/581373"],["FETV · 대우건설 컨소 실시설계","https://www.fetv.co.kr/news/articleView.html?idxno=313457"]],
   src:"https://www.molit.go.kr"},
  {id:"tk",name:"대구경북 통합신공항",cat:"air",org:"국방부 · 국토교통부 · 한국공항공사 · 대구시 · 경북도",region:"경북 군위군 소보면, 의성군 비안면 일원",lat:36.270,lon:128.560,stage:2,
   scale:"민간공항 총사업비 약 2.7조 원 + 군공항 이전",period:"2020 ~ 2030년대",
   desc:"대구 군공항(K-2)과 대구공항을 함께 군위·의성으로 옮기는 사업. 2026년 10월 민간공항 기본계획 변경으로 한국공항공사가 터미널·주차시설 사업시행자로 추가됐습니다(국토부 1.22조, 공항공사 1.48조 분담). 보상·설계 착수는 군공항 이전 진행에 맞춰 정해집니다.",
   tl:[["2020.08","이전 부지 확정"],["2023.04","대구경북통합신공항 특별법 제정"],["2024","민간공항 기본계획 수립"],["2026.10.30","민간공항 기본계획 변경 고시(공항공사 참여)"],["미정","보상·설계 착수(군공항 이전과 연동)",1]],
-  chk:1,news:[["아주경제 · 민항 건설 본격화","https://www.ajunews.com/view/20261029165643591"],["비즈워치 · 사업자에 공항공사 추가","https://news.bizwatch.co.kr/article/real_estate/2026/10/29/0043"]],
+  chk:"2026-11-13",news:[["아주경제 · 민항 건설 본격화","https://www.ajunews.com/view/20261029165643591"],["비즈워치 · 사업자에 공항공사 추가","https://news.bizwatch.co.kr/article/real_estate/2026/10/29/0043"]],
   src:"https://www.molit.go.kr"},
  {id:"bukhang",name:"부산항 북항 재개발",cat:"air",org:"해양수산부 · 부산항만공사",region:"부산 동구·중구 북항 일원",lat:35.112,lon:129.048,stage:3,
   scale:"1단계 약 153만㎡ · 2단계 약 228만㎡",period:"2008 ~ 2030년대",
   desc:"노후 부두를 해양관광·국제업무 공간으로 바꾸는 항만 재개발. 1단계 기반시설은 준공됐고 2단계는 사업계획을 정비하고 있습니다.",
   tl:[["2008","1단계 사업 착수"],["2022","1단계 친수공원 개방"],["2024","1단계 기반시설 준공"],["2025~","2단계 사업자 지정·계획 확정",1]],
-  chk:0,src:"https://www.busanpa.com"},
+  chk:"",src:"https://www.busanpa.com"},
 
  {id:"yongin-nat",name:"용인 반도체 국가산업단지",cat:"ind",org:"국토교통부 · LH · 용인시 · 삼성전자",region:"경기 용인시 처인구 이동·남사읍 일원",lat:37.120,lon:127.205,stage:3,
   scale:"약 728만㎡ · 삼성전자 팹 6기",period:"2023 ~ 2040년대",
   desc:"반도체 메가클러스터의 핵심 국가산단. LH가 사업시행자입니다. 보상 99%를 마치고 2026년 10월 1공구(반도체 1부지·발전소 부지) 조성공사를 시작했습니다. 2공구는 이주기업 보상이 남아 있습니다.",
   tl:[["2023.03","국가산단 후보지 발표"],["2023.12","LH·삼성전자 입주 실시협약"],["2025","산업단지계획 승인"],["2025.12","토지보상 착수"],["2026.10","1공구 부지조성공사 착공(대우건설 컨소시엄)"],["2027 말","우선구역 부지조성 완료 목표",1],["2028","팹 1호기 착공 목표",1]],
-  chk:1,news:[["머니투데이 · 2028년 팹 1호기 착공","https://www.mt.co.kr/estate/2026/10/01/2026093013561251462"],["에너지경제 · 10월 조성 착공","https://m.ekn.kr/view.php?key=20261001023421010"]],
+  chk:"2026-11-13",news:[["머니투데이 · 2028년 팹 1호기 착공","https://www.mt.co.kr/estate/2026/10/01/2026093013561251462"],["에너지경제 · 10월 조성 착공","https://m.ekn.kr/view.php?key=20261001023421010"]],
   src:"https://www.lh.or.kr"},
  {id:"yongin-sk",name:"용인 반도체 클러스터 일반산단",cat:"ind",org:"경기도 · 용인시 · SK하이닉스",region:"경기 용인시 처인구 원삼면 일원",lat:37.180,lon:127.320,stage:3,
   scale:"약 415만㎡ · SK하이닉스 팹 4기",period:"2019 ~ 2040년대",
   desc:"SK하이닉스 메모리 생산기지와 협력업체 단지. 용수·전력 인프라 문제를 거쳐 첫 팹 공사가 진행 중입니다.",
   tl:[["2019.03","입지 확정"],["2022","부지조성공사 착공"],["2025.02","1기 팹 착공"],["2027.05","1기 팹 준공 목표",1]],
-  chk:1,news:[["녹색경제신문 · SK하이닉스 1기 팹 착공","https://www.greened.kr/news/articleView.html?idxno=323749"]],
+  chk:"2026-11-13",news:[["녹색경제신문 · SK하이닉스 1기 팹 착공","https://www.greened.kr/news/articleView.html?idxno=323749"]],
   src:"https://www.gg.go.kr"},
  {id:"saemangeum",name:"새만금 개발사업",cat:"ind",org:"새만금개발청 · 국토교통부 · 한국농어촌공사",region:"전북 군산·김제·부안 일원",lat:35.800,lon:126.600,stage:3,
   scale:"매립 예정 약 291㎢ (서울의 약 2/3)",period:"1991 ~ 2050",
   desc:"방조제 안쪽을 매립해 산업·관광·농생명 용지를 조성하는 국책사업. 이차전지 기업과 현대차그룹 투자가 이어지고 있습니다. 새만금 국제공항은 1심에서 기본계획 취소 판결이 나와 항소심이 진행 중입니다.",
   tl:[["1991","방조제 착공"],["2010","방조제 준공"],["2023","이차전지 특화단지 지정"],["2025.09","국제공항 기본계획 1심 취소 판결, 정부 항소"],["2026.03","집행정지 신청 기각(공항 절차 계속 진행)"],["2026.11.18","공항 기본계획 항소심 선고 예정",1]],
-  chk:1,news:[["경향신문 · 정부 항소","https://www.khan.co.kr/article/202509222040015"],["세계일보 · 항소심 선고 앞둔 새만금공항","https://www.segye.com/newsView/20261007513794"]],
+  chk:"2026-11-13",news:[["경향신문 · 정부 항소","https://www.khan.co.kr/article/202509222040015"],["세계일보 · 항소심 선고 앞둔 새만금공항","https://www.segye.com/newsView/20261007513794"]],
   src:"https://www.saemangeum.go.kr"},
 
  {id:"bundang",name:"분당 노후계획도시 정비 (선도지구)",cat:"urban",org:"국토교통부 · 경기도 · 성남시",region:"경기 성남시 분당구 일원",lat:37.370,lon:127.120,stage:2,
   scale:"선도지구 4개 구역 · 약 1.1만 호",period:"2024 ~ 2030",
   desc:"노후계획도시특별법에 따른 1기 신도시 재건축. 분당은 선도지구(양지·샛별·시범우성·목련 등) 전체가 특별정비구역으로 지정돼 1기 신도시 중 가장 빠릅니다.",
   tl:[["2024.04","노후계획도시특별법 시행"],["2024.11","선도지구 선정"],["2025.05","분당 정비기본계획 승인"],["2026","선도지구 전체 특별정비구역 지정·고시"],["2027","착공 목표",1],["2030","입주 목표",1]],
-  chk:1,news:[["하우징헤럴드 · 분당 특별정비구역 지정","https://www.housingherald.co.kr/news/articleView.html?idxno=60630"],["시사저널e · 1기 신도시 재건축 어디까지","https://www.sisajournal-e.com/news/articleView.html?idxno=423897"]],
+  chk:"2026-11-13",news:[["하우징헤럴드 · 분당 특별정비구역 지정","https://www.housingherald.co.kr/news/articleView.html?idxno=60630"],["시사저널e · 1기 신도시 재건축 어디까지","https://www.sisajournal-e.com/news/articleView.html?idxno=423897"]],
   src:"https://www.molit.go.kr"},
  {id:"ilsan",name:"일산 노후계획도시 정비 (선도지구)",cat:"urban",org:"국토교통부 · 경기도 · 고양시",region:"경기 고양시 일산동·서구 일원",lat:37.668,lon:126.768,stage:1,
   scale:"선도지구 3개 구역 · 약 0.9만 호",period:"2024 ~ 2030년대",
   desc:"일산 1기 신도시 재건축 선도지구. 분당보다 진척이 늦어 선도지구 4곳이 아직 특별정비구역 지정 전입니다. 강촌·백마 단지가 2026년 초 정비계획안을 접수했습니다.",
   tl:[["2024.11","선도지구 선정"],["2025.05","일산 정비기본계획 승인"],["2026.01","강촌1·2, 백마1·2 정비계획안 접수"],["미정","특별정비구역 지정",1],["2027","착공 목표(지연 가능)",1]],
-  chk:1,news:[["네이트뉴스 · 분당은 질주, 일산은 제자리","https://m.news.nate.com/view/20260204n32953"],["한국경제 · 일산 백마도 달릴까","https://www.hankyung.com/article/202601304290i"]],
+  chk:"2026-11-13",news:[["네이트뉴스 · 분당은 질주, 일산은 제자리","https://m.news.nate.com/view/20260204n32953"],["한국경제 · 일산 백마도 달릴까","https://www.hankyung.com/article/202601304290i"]],
   src:"https://www.molit.go.kr"},
  {id:"pyeongchon",name:"평촌·산본·중동 노후계획도시 정비",cat:"urban",org:"국토교통부 · 경기도 · 안양·군포·부천시",region:"경기 안양 평촌, 군포 산본, 부천 중동",lat:37.392,lon:126.962,stage:1,
   scale:"선도지구 6개 구역 · 약 1.6만 호",period:"2024 ~ 2030년대",
   desc:"분당·일산을 제외한 1기 신도시 3곳의 선도지구. 1기 신도시 전체로는 선도지구·별도정비물량 15곳 중 10곳이 특별정비구역으로 지정됐고, 중동은 상대적으로 늦습니다.",
   tl:[["2024.11","선도지구 선정"],["2025","정비기본계획 승인"],["2026","일부 구역 특별정비구역 지정"],["2027","착공 목표",1]],
-  chk:1,news:[["시사저널e · 1기 신도시 재건축 어디까지","https://www.sisajournal-e.com/news/articleView.html?idxno=423897"]],
+  chk:"2026-11-13",news:[["시사저널e · 1기 신도시 재건축 어디까지","https://www.sisajournal-e.com/news/articleView.html?idxno=423897"]],
   src:"https://www.molit.go.kr"},
  {id:"yongsan",name:"용산국제업무지구",cat:"urban",org:"서울시 · 코레일 · SH",region:"서울 용산구 한강로3가 일원(옛 철도정비창)",lat:37.526,lon:126.963,stage:3,
   scale:"약 45.6만㎡ · 100층 내외 랜드마크",period:"2024 ~ 2030년대",
   desc:"2013년 무산된 사업을 공공(코레일·SH) 주도로 다시 추진하는 국제업무지구. 인허가는 순조롭지만 기업 유치가 과제로 꼽힙니다.",
   tl:[["2023.02","개발계획 발표"],["2024.11","도시개발구역 지정·개발계획 고시"],["2025.11","실시계획 인가·기반시설 착공"],["2028","기반시설 준공 목표",1],["2028~","획지별 건축 착공",1],["2030년대","입주 목표",1]],
-  chk:1,news:[["비욘드포스트 · 이달 말 첫 삽","https://www.beyondpost.co.kr/view.php?ud=2025111913361084682aaae0046f_30"],["시사저널e · 기업 유치는 감감","https://www.sisajournal-e.com/news/articleView.html?idxno=414231"]],
+  chk:"2026-11-13",news:[["비욘드포스트 · 이달 말 첫 삽","https://www.beyondpost.co.kr/view.php?ud=2025111913361084682aaae0046f_30"],["시사저널e · 기업 유치는 감감","https://www.sisajournal-e.com/news/articleView.html?idxno=414231"]],
   src:"https://www.seoul.go.kr"},
 
  {id:"sejong",name:"행정중심복합도시 (세종)",cat:"admin",org:"행정중심복합도시건설청 · 국회사무처 · LH",region:"세종특별자치시 일원",lat:36.495,lon:127.265,stage:3,
   scale:"약 72.9㎢ · 계획인구 50만 명",period:"2007 ~ 2033",
   desc:"중앙부처 이전과 함께 조성 중인 행정수도. 대통령 세종집무실은 설계 중이고, 국회세종의사당은 마스터플랜 당선작을 정해 설계에 들어갑니다. 2027년 예산에 집무실 2,057억 원(대부분 보상비), 의사당 설계비 1,191억 원이 반영됐습니다.",
   tl:[["2007","착공"],["2012","정부세종청사 1단계 이전"],["2026","세종집무실 기본·실시설계, 의사당 마스터플랜 당선작 선정"],["2027.08","대통령 세종집무실 착공 목표",1],["2029.08","세종집무실 입주 목표",1],["2029","국회세종의사당 착공 목표",1],["2033","국회세종의사당 준공 목표",1]],
-  chk:1,news:[["뉴시스 · 세종의사당·집무실 예산 1.8조","https://mobile.newsis.com/view/NISX20260902_0003773540"],["네이트뉴스 · 집무실 2027년 8월 착공","https://news.nate.com/view/20260113n32659"]],
+  chk:"2026-11-13",news:[["뉴시스 · 세종의사당·집무실 예산 1.8조","https://mobile.newsis.com/view/NISX20260902_0003773540"],["네이트뉴스 · 집무실 2027년 8월 착공","https://news.nate.com/view/20260113n32659"]],
   src:"https://www.naacc.go.kr"}
 ];
+
 
 /* ---------- 지도 ---------- */
 const svg=document.getElementById('map');
@@ -506,6 +513,10 @@ function drawMap(){
       });
       const [la,lo]=p.route[p.lp??Math.floor(p.route.length/2)], [x,y]=proj(lo,la);
       const t=el('text',{x,y,class:'rlbl'+(sel?' sel':''),fill:col},gRLbl); t.dataset.kind=p.cat; t.textContent=p.ln||p.name;
+      if(p.dest){ // 기존 고속선으로 이어지는 운행 종착지
+        const [la2,lo2]=p.route[p.route.length-1], [x2,y2]=proj(lo2,la2);
+        const t2=el('text',{x:x2,y:y2,class:'rlbl',fill:col},gRLbl); t2.dataset.kind=p.cat; t2.textContent='→ '+p.dest.replace(/\(.*?\)/g,'').replace(/\s+/g,' ')+' 방면';
+      }
     }
   }
   for(const p of list){
@@ -574,12 +585,12 @@ function renderDetail(){
     <div class="org">${p.org}</div>
     <div class="steps">${STAGES.map((s,i)=>`<i class="${i<=p.stage?'on':''}"></i>`).join('')}</div>
     <div class="steplbl">${STAGES.map((s,i)=>`<span class="${i===p.stage?'on':''}">${s}</span>`).join('')}</div>
-    <dl>${p.ln?`<dt>노선</dt><dd><b style="color:${col}">${p.ln}</b></dd><dt>구간</dt><dd>${p.sec}</dd>${p.st?`<dt>주요 기착지</dt><dd><ol class="stops">${p.st.filter(Boolean).map(n=>`<li>${n}</li>`).join('')}</ol></dd>`:''}`:''}<dt>위치</dt><dd>${p.region}</dd><dt>규모</dt><dd>${p.scale}</dd><dt>사업기간</dt><dd>${p.period}</dd></dl>
+    <dl>${p.ln?`<dt>노선</dt><dd><b style="color:${col}">${p.ln}</b></dd><dt>구간</dt><dd>${p.sec}</dd>${p.dest?`<dt>운행 종착지</dt><dd>${p.dest}</dd>`:''}${p.st?`<dt>주요 기착지</dt><dd><ol class="stops">${p.st.filter(Boolean).map(n=>`<li>${n}</li>`).join('')}</ol></dd>`:''}`:''}<dt>위치</dt><dd>${p.region}</dd><dt>규모</dt><dd>${p.scale}</dd><dt>사업기간</dt><dd>${p.period}</dd></dl>
     <p class="desc">${p.desc}</p>
     <div class="h3">추진 경과</div>
     <ul class="tl">${p.tl.map(([d,t,f])=>`<li class="${f?'future':''}"><time>${d}</time>${t}${f?' <span class="note">(예정)</span>':''}</li>`).join('')}</ul>
     ${p.news?`<div class="h3">관련 보도</div><ul class="news">${p.news.map(([t,u])=>`<li><a href="${u}" target="_blank" rel="noopener">${t}</a></li>`).join('')}</ul>`:''}
-    <div class="src">${p.chk?'2026-11-13 언론 보도로 진행상태 확인':'이번 갱신에서 최신 보도를 확인하지 못한 항목입니다'} · 기관: <a href="${p.src}" target="_blank" rel="noopener">${p.src.replace('https://','')}</a></div>`;
+    <div class="src">${p.chk?`${p.chk} 언론 보도로 진행상태 확인`:'최근 갱신에서 최신 보도를 확인하지 못한 항목입니다'} · 기관: <a href="${p.src}" target="_blank" rel="noopener">${p.src.replace('https://','')}</a></div>`;
   D.scrollTop=0;
 }
 
@@ -592,6 +603,8 @@ function select(id,fly){
 }
 function refresh(){if(state.sel&&!visible(PROJECTS.find(p=>p.id===state.sel)))state.sel=null;drawMap();renderList();renderDetail()}
 
+document.getElementById('upd').textContent=UPDATED;document.getElementById('upd').setAttribute('datetime',UPDATED);
+document.getElementById('updnote').textContent=`${UPDATED} 갱신 · 언론 보도 기준`;
 renderFilters();renderStats();fit();refresh();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawMap);
 new MutationObserver(drawMap).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
