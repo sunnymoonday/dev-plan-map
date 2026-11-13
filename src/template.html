@@ -31,7 +31,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14p
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px}
 h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
-.upd{display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;font-size:12px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.upd{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 6px;margin:6px 0 0;font-size:12px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px 10px;max-width:100%}
+.upd time{white-space:nowrap}
 .upd time{font-family:var(--mono);font-weight:500}
 .upd-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .stats{display:flex;gap:18px;font-variant-numeric:tabular-nums}
@@ -126,7 +127,7 @@ dd{margin:0;min-width:0}
     <div>
       <h1>국토 개발계획 지도</h1>
       <p class="sub">정부·공공기관이 발표한 주요 개발계획의 위치와 진행 단계. 지도의 점이나 노선을 누르면 상세 내용이 나옵니다.</p>
-      <p class="upd"><span class="upd-dot" aria-hidden="true"></span>최종 업데이트 <time id="upd"></time> · 하루 한 번 언론 보도를 확인해 갱신합니다</p>
+      <p class="upd"><span class="upd-dot" aria-hidden="true"></span><span style="white-space:nowrap">최종 업데이트 <time id="upd"></time></span><span>· 하루 한 번 언론 보도를 확인해 갱신합니다</span></p>
     </div>
     <div class="stats" id="stats"></div>
   </header>
