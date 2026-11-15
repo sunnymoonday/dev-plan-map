@@ -1,5 +1,5 @@
 /* 최종 업데이트 날짜: 자동 갱신 작업이 매일 바꿉니다 */
-const UPDATED="2026-11-13";
+const UPDATED="2026-11-15";
 const PROJECTS=[
  {id:"wangsuk",name:"남양주 왕숙 공공주택지구",cat:"house",org:"국토교통부 · LH · 경기주택도시공사",region:"경기 남양주시 진접·진건읍, 양정동 일원",lat:37.636,lon:127.185,stage:3,
   scale:"약 1,134만㎡ · 약 6.6만 호",period:"2019 ~ 2028(준공 예정)",
